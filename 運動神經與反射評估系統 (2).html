@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>運動神經與反射評估系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Huninn&family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* Layout: sticky header with three role tabs; each view is a single column of panels; scoring views add a sticky bottom score bar. */
+:root{
+  --paper:#F7F8F6; --panel:#FFFFFF; --ink:#33403F; --muted:#76837F; --line:#E5EAE6;
+  --accent:#5E9C97; --accent-ink:#FFFFFF; --accent-soft:#E8F2F0; --sun:#EFC983; --teal:#E9AE97; --sky:#9DB7DC;
+  --good:#5B9A80; --good-soft:#E7F2EC; --warn:#BC914A; --warn-soft:#FAF2E1; --bad:#CD8576; --bad-soft:#F9ECE8;
+  --good-mid:#BFE0D0; --warn-mid:#F1DDAF; --bad-mid:#F0C9BF;
+  --display:"Huninn","Noto Sans TC","PingFang TC",sans-serif; --body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  --r:18px; --shadow:0 1px 2px rgba(60,80,75,.04),0 8px 24px rgba(60,80,75,.05);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#161B1B; --panel:#1E2525; --ink:#E4ECEA; --muted:#A3B0AD; --line:#2F3938;
+  --accent:#8CC5BF; --accent-ink:#13201F; --accent-soft:#233332; --sun:#E6C88F; --teal:#E2B3A2; --sky:#A9BFE0;
+  --good:#8CC4AA; --good-soft:#20302A; --warn:#DDBB7E; --warn-soft:#352E20; --bad:#E3A497; --bad-soft:#3A2925;
+  --good-mid:#2F5A47; --warn-mid:#5A4A28; --bad-mid:#5E3A32;
+  --shadow:0 1px 2px rgba(0,0,0,.25); color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --paper:#161B1B; --panel:#1E2525; --ink:#E4ECEA; --muted:#A3B0AD; --line:#2F3938;
+  --accent:#8CC5BF; --accent-ink:#13201F; --accent-soft:#233332; --sun:#E6C88F; --teal:#E2B3A2; --sky:#A9BFE0;
+  --good:#8CC4AA; --good-soft:#20302A; --warn:#DDBB7E; --warn-soft:#352E20; --bad:#E3A497; --bad-soft:#3A2925;
+  --good-mid:#2F5A47; --warn-mid:#5A4A28; --bad-mid:#5E3A32;
+  --shadow:0 1px 2px rgba(0,0,0,.25); color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(900px 520px at 105% -8%,transparent,transparent 65%),radial-gradient(800px 480px at -8% 108%,transparent,transparent 65%),radial-gradient(700px 400px at 50% 50%,transparent,transparent 70%),var(--paper);background:radial-gradient(900px 520px at 105% -8%,color-mix(in srgb,var(--accent) 9%,transparent),transparent 65%),radial-gradient(800px 480px at -8% 108%,color-mix(in srgb,var(--sun) 12%,transparent),transparent 65%),radial-gradient(700px 400px at 50% 50%,color-mix(in srgb,var(--sky) 5%,transparent),transparent 70%),var(--paper);background-attachment:fixed;min-height:100vh;color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.3}
+h1,h2,h3{font-weight:400;letter-spacing:.01em} h2{font-size:1.5rem} h3{font-size:1.15rem}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)} .small{font-size:.86rem}
+header.top{position:sticky;top:0;z-index:20;background:var(--panel);background:color-mix(in srgb,var(--panel) 82%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.top-in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;line-height:1.25}
+.brand b{font-family:var(--display);font-size:1.25rem;font-weight:400}
+.logo{width:40px;height:40px;flex:none;border-radius:12px;background:linear-gradient(140deg,var(--accent),var(--sky));box-shadow:0 3px 10px transparent;box-shadow:0 3px 10px color-mix(in srgb,var(--accent) 30%,transparent);display:grid;place-items:center}
+.brandwrap{display:flex;gap:10px;align-items:center;margin-right:auto}
+header.top::after{content:"";display:block;height:3px;background:linear-gradient(90deg,var(--accent),var(--sky) 35%,var(--lav,#C4B3DA) 60%,var(--teal) 80%,var(--sun));opacity:.85}
+.brand span{font-size:.78rem;color:var(--muted)}
+.roles{display:flex;gap:4px;background:var(--paper);padding:4px;border-radius:999px;border:1px solid var(--line)}
+.roles a{padding:6px 14px;border-radius:999px;text-decoration:none;color:var(--muted);font-weight:500;font-size:.92rem}
+.roles a[aria-current="page"]{background:var(--accent);color:var(--accent-ink)}
+.status{font-size:.78rem;padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.status.ok{color:var(--good);border-color:var(--good)} .status.local{color:var(--warn);border-color:var(--warn)}
+main{max-width:1180px;margin:0 auto;padding:18px 16px 120px;display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:140px;flex:1}
+.field label{font-size:.82rem;color:var(--muted);font-weight:500}
+input[type=text],input[type=number],input[type=date],select,textarea{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:9px 12px;width:100%;border-width:1.5px}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+textarea{min-height:80px;resize:vertical}
+.btn{border:1.5px solid var(--line);background:var(--panel);border-radius:999px;padding:8px 18px;cursor:pointer;font-weight:500;white-space:nowrap}
+a.btn{text-decoration:none;color:var(--ink);display:inline-block}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 3px 10px transparent;box-shadow:0 3px 10px color-mix(in srgb,var(--accent) 25%,transparent)}
+.btn.pri:hover{background:var(--accent);background:color-mix(in srgb,var(--accent) 88%,#000);border-color:transparent}
+.btn.pri:active{transform:translateY(1px)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.sm{padding:4px 10px;font-size:.85rem}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:999px;width:fit-content;max-width:100%}
+.tabs button{border:0;background:none;padding:8px 16px;cursor:pointer;color:var(--muted);font-weight:500;border-radius:999px;white-space:nowrap}
+.tabs button:hover{background:var(--paper)}
+.tabs button[aria-selected="true"]{color:var(--accent-ink);background:var(--accent)}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:.75rem;padding:1px 8px;border-radius:999px;background:var(--paper);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.chip.say{color:var(--accent);border-color:var(--accent-soft);background:var(--accent-soft)}
+.chip.side{color:var(--warn);background:var(--warn-soft);border-color:transparent}
+.chip.good{color:var(--good);background:var(--good-soft);border-color:transparent}
+.chip.bad{color:var(--bad);background:var(--bad-soft);border-color:transparent}
+.chip.warn{color:var(--warn);background:var(--warn-soft);border-color:transparent}
+.note{border-left:4px solid var(--warn);background:var(--warn-soft);padding:10px 14px;border-radius:12px;font-size:.9rem}
+.note.info{border-color:var(--accent);background:var(--accent-soft)}
+/* rubric / scoring */
+.sec{--sc:var(--accent);border:1px solid var(--line);border-top:5px solid var(--sc);border-radius:var(--r);background:var(--panel);overflow:hidden;scroll-margin-top:90px}
+.sec-no{width:32px;height:32px;border-radius:11px;background:var(--panel);background:color-mix(in srgb,var(--sc) 22%,var(--panel));color:var(--sc);color:color-mix(in srgb,var(--sc) 65%,var(--ink));display:grid;place-items:center;font-family:var(--display);font-size:1rem;flex:none}
+.sec-h{display:flex;gap:10px;align-items:center;padding:12px 16px;background:linear-gradient(90deg,var(--panel),var(--panel));background:linear-gradient(90deg,color-mix(in srgb,var(--sc) 13%,var(--panel)),var(--panel));border-bottom:1px solid var(--line);flex-wrap:wrap}
+.sec-h h3{margin-right:auto}
+.sec-sum{font-family:var(--mono);font-size:.9rem}
+.grp-h{padding:8px 16px;font-weight:700;font-size:.92rem;color:var(--sc);color:color-mix(in srgb,var(--sc) 70%,var(--ink));border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.item{display:grid;grid-template-columns:44px 1fr auto;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);align-items:center}
+.item:last-child{border-bottom:0}
+.item .code{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+.item .txt{display:flex;flex-direction:column;gap:3px}
+.item .tags{display:flex;gap:4px;flex-wrap:wrap}
+.item.done-full{background:var(--good-soft)}
+.item.done-part{background:var(--warn-soft)}
+.item.done-zero{background:var(--bad-soft)}
+.seg{display:flex;gap:4px}
+.seg button{border:1.5px solid var(--line);border-radius:12px;background:var(--panel);min-width:42px;padding:8px 6px;cursor:pointer;font-family:var(--mono);font-weight:600}
+.seg button:hover{border-color:var(--sc,var(--accent))}
+.seg button[aria-pressed="true"]{transform:scale(1.05);color:var(--ink);font-weight:700}
+.seg button[aria-pressed="true"].z{background:var(--bad-mid);border-color:var(--bad)}
+.seg button[aria-pressed="true"].p{background:var(--warn-mid);border-color:var(--warn)}
+.seg button[aria-pressed="true"].f{background:var(--good-mid);border-color:var(--good)}
+.pts{font-family:var(--mono);font-size:.8rem;color:var(--muted);text-align:right}
+details.ref{padding:0 16px 10px}
+details.ref summary{cursor:pointer;font-size:.85rem;color:var(--muted);padding:6px 0}
+.reftab{width:100%;border-collapse:collapse;font-size:.88rem}
+.reftab td{border-top:1px solid var(--line);padding:5px 8px;vertical-align:top}
+.reftab td:first-child{font-family:var(--mono);font-weight:600;width:56px;color:var(--accent)}
+.ded{display:flex;gap:10px;align-items:flex-start;padding:8px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.ded input{margin-top:5px;width:18px;height:18px;accent-color:var(--bad)}
+.ded:last-child{border-bottom:0}
+/* score bar */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.06)}
+.bar-in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column;line-height:1.15}
+.stat small{font-size:.72rem;color:var(--muted)}
+.stat b{font-family:var(--mono);font-size:1.15rem}
+.stat.big b{font-size:1.7rem;color:var(--accent)}
+.timer.over b{color:var(--bad)}
+.bar .spacer{flex:1}
+.progress{height:6px;border-radius:999px;background:var(--line);overflow:hidden;width:120px}
+.progress i{display:block;height:100%;background:var(--accent)}
+.jump{display:flex;gap:6px;flex-wrap:wrap}
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
+table.data{border-collapse:collapse;width:100%;font-size:.9rem}
+table.data th,table.data td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+table.data th{background:var(--paper);font-weight:600;font-size:.82rem;color:var(--muted);position:sticky;top:0}
+table.data tr.click{cursor:pointer} table.data tr.click:hover td{background:var(--accent-soft)}
+table.data td.n{font-family:var(--mono);text-align:right}
+/* kpi + charts */
+.kpi{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);position:relative;overflow:hidden}
+.kpi{background:linear-gradient(140deg,var(--panel),var(--panel) 75%);background:linear-gradient(140deg,color-mix(in srgb,var(--kc,var(--accent)) 12%,var(--panel)),var(--panel) 75%);border-color:var(--line);border-color:color-mix(in srgb,var(--kc,var(--accent)) 22%,var(--line))}
+.kpi b{color:var(--kc,var(--accent));color:color-mix(in srgb,var(--kc,var(--accent)) 70%,var(--ink))}
+.kpi small{font-weight:500}
+.grid3>.kpi:nth-child(4n+1){--kc:var(--accent)}.grid3>.kpi:nth-child(4n+2){--kc:var(--sun)}.grid3>.kpi:nth-child(4n+3){--kc:var(--teal)}.grid3>.kpi:nth-child(4n+4){--kc:var(--sky)}
+.kpi small{color:var(--muted);font-size:.8rem} .kpi b{font-family:var(--mono);font-size:1.7rem;line-height:1.2}
+.hbar{display:grid;grid-template-columns:minmax(120px,240px) 1fr 84px;gap:10px;align-items:center;font-size:.86rem;padding:3px 0}
+.hbar .track{height:12px;background:var(--paper);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.hbar .track i{display:block;height:100%;background:var(--accent)}
+.hbar .track i.good{background:var(--good)} .hbar .track i.warn{background:var(--warn)} .hbar .track i.bad{background:var(--teal)}
+.hbar .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist{display:flex;gap:10px;align-items:flex-end;height:160px;padding:10px 4px 0;border-bottom:1px solid var(--line)}
+.hist .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
+.hist .col i{display:block;width:100%;max-width:56px;background:linear-gradient(180deg,var(--sun),var(--accent));border-radius:10px 10px 0 0;min-height:2px}
+.hist .col span{font-family:var(--mono);font-size:.8rem}
+.hist-x{display:flex;gap:10px;padding:4px}
+.hist-x span{flex:1;text-align:center;font-size:.78rem;color:var(--muted)}
+/* login */
+.login{max-width:960px;margin:24px auto 0;display:grid;grid-template-columns:1.15fr 1fr;gap:0;border-radius:24px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow)}
+.login .l{background:radial-gradient(circle at 88% 14%,var(--sun) 0 64px,transparent 65px),radial-gradient(circle at 0% 108%,transparent 0 110px,transparent 111px),linear-gradient(145deg,var(--hero1,#E3F4EF) 0%,var(--hero2,#FDE9E1) 58%,var(--hero3,#FFF4DC) 100%);background:radial-gradient(circle at 88% 14%,color-mix(in srgb,var(--sun) 70%,transparent) 0 64px,transparent 65px),radial-gradient(circle at 0% 108%,color-mix(in srgb,var(--teal) 45%,transparent) 0 110px,transparent 111px),linear-gradient(145deg,var(--hero1,#E3F4EF) 0%,var(--hero2,#FDE9E1) 58%,var(--hero3,#FFF4DC) 100%);color:var(--ink);padding:34px;position:relative;overflow:hidden}
+.login .l .kicker{display:inline-block;background:var(--panel);background:color-mix(in srgb,var(--panel) 70%,transparent);color:var(--accent);color:color-mix(in srgb,var(--accent) 70%,var(--ink));border-radius:999px;padding:3px 12px;font-size:.85rem;margin-bottom:12px}
+.pulse{width:100%;height:70px;margin:6px 0 4px;display:block}
+.pulse path{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.pulse .trace{stroke:#E0A15F;stroke-width:4;stroke-dasharray:60 900}
+@media (prefers-reduced-motion:no-preference){.pulse .trace{animation:pulse 2.6s cubic-bezier(.6,.1,.3,1) infinite}@keyframes pulse{from{stroke-dashoffset:60}to{stroke-dashoffset:-900}}}
+.feat{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;padding:0;list-style:none}
+.feat li{background:var(--panel);background:color-mix(in srgb,var(--panel) 65%,transparent);border-radius:14px;padding:10px 12px;font-size:.9rem;line-height:1.45}
+.feat li b{display:block;color:var(--accent);color:color-mix(in srgb,var(--accent) 70%,var(--ink));font-family:var(--display);font-weight:400;font-size:1.05rem}
+.login .l h1{font-size:2.3rem;margin-bottom:4px;line-height:1.2}
+
+.login .r{background:var(--panel);padding:30px;display:flex;flex-direction:column;gap:14px}
+@media (max-width:720px){header.top{position:static}.bar-in{gap:10px;padding:8px 12px}.stat.big b{font-size:1.4rem}.login{grid-template-columns:1fr}.item{grid-template-columns:34px 1fr}.item .seg{grid-column:2}.hbar{grid-template-columns:110px 1fr 46px}}
+.teacher-entry{max-width:960px;margin:16px auto 0;width:100%;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--teal);border-radius:20px;padding:18px 22px}
+.teacher-entry h2{font-size:1.15rem}
+.err{color:var(--bad);font-size:.85rem;min-height:1.2em}
+/* quiz */
+.opt{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--panel);cursor:pointer;margin-top:8px}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt .L{width:30px;height:30px;border-radius:10px;background:var(--paper);display:grid;place-items:center;font-family:var(--display);flex:none}
+.opt.right .L{background:var(--good);color:#fff}.opt.wrong .L{background:var(--bad);color:#fff}
+.dots{display:flex;gap:6px;flex-wrap:wrap}.dots i{width:22px;height:8px;border-radius:999px;background:var(--line)}.dots i.ok{background:var(--good)}.dots i.no{background:var(--bad)}.dots i.cur{background:var(--sun)}
+.cheer{font-family:var(--display);font-size:1.6rem;color:var(--accent);margin:0}
+.opt.right{border-color:var(--good);background:var(--good-soft)} .opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt:disabled{cursor:default}
+/* modal + toast */
+.modal-bg{position:fixed;inset:0;background:rgba(10,15,22,.5);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:40px 12px;overflow-y:auto}
+.modal{background:var(--panel);border-radius:12px;max-width:860px;width:100%;padding:20px;display:flex;flex-direction:column;gap:14px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:999px;z-index:60;font-size:.9rem;max-width:90vw}
+.spark{display:block}
+@media (prefers-reduced-motion:no-preference){.item,.btn,.seg button,.opt,.kpi{transition:background .15s,border-color .15s,transform .12s}.kpi:hover,.opt:hover:not(:disabled){transform:translateY(-2px)}main>*{animation:rise .35s ease both}@keyframes rise{from{opacity:.001;transform:translateY(8px)}to{opacity:1;transform:none}}}
+/* palette picker */
+.pal{position:relative}
+.pal summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;font-size:.82rem;color:var(--muted);background:var(--panel)}
+.pal summary::-webkit-details-marker{display:none}
+.pal .sw{display:inline-flex}.pal .sw i{width:12px;height:12px;border-radius:50%;margin-left:-3px;border:2px solid var(--panel)}
+.pal-menu{position:absolute;right:0;top:calc(100% + 8px);background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.12);padding:8px;display:flex;flex-direction:column;gap:4px;min-width:220px;z-index:40}
+.pal-menu button{display:flex;align-items:center;gap:10px;border:0;background:none;padding:8px 10px;border-radius:12px;cursor:pointer;text-align:left}
+.pal-menu button:hover,.pal-menu button[aria-checked="true"]{background:var(--accent-soft)}
+.pal-menu .sw i{width:18px;height:18px}
+
+/* ===== scoring sheet (card layout, like 腦神經練習頁) ===== */
+header.top{position:static}
+#sbar{position:sticky;top:0;z-index:25}
+.scorebar{background:color-mix(in srgb,var(--panel) 94%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line);box-shadow:0 2px 10px rgba(0,0,0,.04)}
+.scorebar{background:var(--panel)}
+.sb-in{max-width:1000px;margin:0 auto;padding:8px 16px 0;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.sb-big{font-family:var(--display);line-height:1;white-space:nowrap}
+.sb-big b{font-size:2rem;font-weight:400;color:var(--accent)}
+.sb-big small{font-size:.95rem;color:var(--muted)}
+.meter{flex:1;min-width:180px}
+.meter .lbl{display:flex;justify-content:space-between;gap:10px;font-size:.8rem;color:var(--muted);flex-wrap:wrap}
+.meter .track{height:7px;border-radius:999px;background:var(--line);overflow:hidden;margin-top:4px}
+.meter .track i{display:block;height:100%;width:0;background:var(--accent);border-radius:999px;transition:width .2s}
+.sb-time{font-family:var(--mono);font-size:1.05rem;white-space:nowrap}
+.sb-time.over{color:var(--bad)}
+.sb-act{display:flex;gap:6px}
+.sb-chips{max-width:1000px;margin:0 auto;padding:8px 16px 10px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:thin}
+.sb-chips button{flex:none;font-size:.8rem;padding:3px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer}
+.sb-chips button.done{border-color:var(--good);color:var(--good);background:var(--good-soft)}
+.sheet{max-width:1000px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.csec{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 20px;box-shadow:var(--shadow);scroll-margin-top:130px}
+.csec-h{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:4px}
+.csec-h .code{font-size:.78rem;font-weight:700;letter-spacing:.04em;color:var(--sc,var(--accent))}
+.csec-h h2{font-size:1.25rem}
+.csec-h .sub{margin-left:auto;font-family:var(--mono);font-size:.92rem}
+.csec .snote{font-size:.85rem;border-left:3px solid var(--warn);background:var(--warn-soft);padding:8px 12px;border-radius:0 8px 8px 0;margin:6px 0}
+.csec .subh{font-size:.85rem;font-weight:700;color:var(--muted);margin:12px 0 2px;padding-top:8px;border-top:1px dashed var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.csec details.ref{padding:0;margin:2px 0 4px}
+.it{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:9px 8px;border-bottom:1px solid var(--line);border-radius:8px}
+.it:last-child{border-bottom:0}
+.it .t{font-size:.97rem}
+.it .t .pts{font-size:.78rem;color:var(--muted);margin-left:6px;white-space:nowrap}
+.it .t .chip{margin-left:4px;vertical-align:1px}
+.it.full{background:var(--good-soft)} .it.part{background:var(--warn-soft)} .it.zero{background:var(--bad-soft)}
+.sg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:none;background:var(--panel)}
+.sg button{border:0;border-left:1px solid var(--line);background:var(--panel);min-width:44px;height:38px;padding:0 10px;font-weight:600;color:var(--muted);cursor:pointer;font-family:var(--body)}
+.sg button:first-child{border-left:0}
+.sg button[aria-pressed="true"].zero{background:var(--bad-mid);color:var(--ink)}
+.sg button[aria-pressed="true"].part{background:var(--warn-mid);color:var(--ink)}
+.sg button[aria-pressed="true"].full{background:var(--good-mid);color:var(--ink)}
+.it .got{font-family:var(--mono);font-size:.9rem;white-space:nowrap}
+.finds{margin-top:10px;padding:12px 14px;background:var(--paper);border-radius:12px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end}
+.finds .lab{font-size:.82rem;font-weight:700;color:var(--muted);width:100%}
+.finds label.f{display:flex;flex-direction:column;gap:3px;font-size:.78rem;color:var(--muted);font-weight:500}
+.finds select,.finds input{background:var(--panel);padding:6px 8px;border-radius:8px;width:auto;min-width:84px}
+.finds input.note-in{min-width:220px;flex:1}
+.finds .grow{flex:1;min-width:220px}
+.rd{display:flex;gap:4px}
+.rd button{border:1px solid var(--line);background:var(--panel);padding:6px 14px;border-radius:8px;font-size:.85rem;cursor:pointer}
+.rd button[aria-pressed="true"][data-v="正常"]{background:var(--good-mid);border-color:var(--good)}
+.rd button[aria-pressed="true"][data-v="異常"]{background:var(--bad-mid);border-color:var(--bad)}
+.interp{font-size:.85rem;font-weight:600;color:var(--accent)}
+.fview{margin-top:8px;font-size:.88rem;padding:8px 12px;background:var(--paper);border-radius:10px}
+.dedrow{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.dedrow:last-child{border-bottom:0}
+.dedrow input{margin-top:5px;width:18px;height:18px;accent-color:var(--bad)}
+.dedrow .minus{margin-left:auto;color:var(--bad);font-weight:700;white-space:nowrap}
+@media (max-width:600px){.meter{order:3;flex-basis:100%}.sb-act{margin-left:auto}.sb-in{padding-top:6px}.it{grid-template-columns:1fr}.sg{justify-self:start}.sb-big b{font-size:1.6rem}.sb-in{gap:10px}}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:70}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <div class="brandwrap"><span class="logo" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 13h4l2-6 4 12 3-9 2 3h5"/></svg></span><div class="brand"><b>運動神經與反射評估系統</b><span>國立成功大學護理學系 · 健康檢查與評估（含實習）・技術練習</span></div></div>
+  <nav class="roles" aria-label="身分">
+    <a href="#student" id="nav-student">學生練習</a>
+    <a href="#teacher" id="nav-teacher">教師管理</a>
+    <a href="#exam" id="nav-exam">考試評分</a>
+  </nav>
+  <details class="pal" id="pal"><summary aria-label="切換配色"><span class="sw" id="pal-sw"></span>配色</summary><div class="pal-menu" id="pal-menu" role="menu"></div></details>
+  <button class="btn sm" id="t-logout" data-act="t-logout" hidden>教師登出</button>
+  <span class="status" id="status">連線中…</span>
+</div></header>
+<div id="sbar"></div>
+<main id="main"></main>
+<div id="bar"></div>
+<div id="overlay"></div>
+<script>
+"use strict";
+window.addEventListener("error",e=>{try{const m="程式發生錯誤："+(e.message||"未知")+"。請截圖告知老師或系統管理者。";const d=document.createElement("div");d.className="toast";d.style.background="#8a3b30";d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),8000)}catch{}});
+window.addEventListener("unhandledrejection",e=>{try{const d=document.createElement("div");d.className="toast";d.style.background="#8a3b30";d.textContent="操作失敗："+((e.reason&&(e.reason.message||e.reason.code))||e.reason||"未知錯誤");document.body.appendChild(d);setTimeout(()=>d.remove(),8000)}catch{}});
+/* ================= 評分表資料（依 115 學年度評分標準） ================= */
+const REFS={
+ E:{title:'張眼反應 E（1–4 分）',rows:[['4','自發睜眼'],['3','對說話聲音睜眼'],['2','對刺激睜眼（如指甲床刺激）'],['1','無反應'],['C','因眼部腫脹無法評估']]},
+ V:{title:'最佳語言表達 V（1–5 分）',rows:[['5','人、時、地正確回答'],['4','混亂對話（confused conversation）：人、時、地其中一項不正確回答'],['3','只可說出可理解單字（inappropriate words）'],['2','只有呻吟聲（incomprehensible sounds）'],['1','無反應'],['E／T','E：氣管內管；T：氣管造口']]},
+ M:{title:'最佳運動反應 M（1–6 分）',rows:[['6','能遵循指令動作'],['5','能除去刺激源'],['4','給予刺激時，肢體快速正常彎曲'],['3','給予刺激時，肢體異常彎曲（去皮質僵直，decorticate posture）'],['2','給予刺激時，肢體呈伸張反應（去大腦僵直，decerebrate posture）'],['1','無反應'],['註','記錄最佳肢體反應']]},
+ MS:{title:'肌力評分 0–5 級',rows:[['5','可抗完全阻力（正常）'],['4','可抗部分阻力'],['3','可抗重力活動'],['2','無法抗重力（水平移動）'],['1','可見或可觸及收縮但無關節活動（只有手指動）'],['0','無肌肉收縮']]},
+ DTR:{title:'深層肌腱反射 DTRs 0–4+',rows:[['0','無反射'],['1+','反射較弱'],['2+','正常'],['3+','反射稍強（brisker / more brisk）'],['4+','反射強烈伴隨陣攣（clonus）']]}
+};
+const R=[
+{id:'pre',name:'評估前準備',note:'檢查工具：敲診槌、音叉；兩種大小可放於手掌心的熟悉物品（如硬幣、迴紋針）',groups:[{name:'',items:[['pre1','(1) 洗手（請以乾洗手執行）(2) 自我介紹 (3) 核對病人 (4) 解釋目的 (5) 保護隱私',1]]}]},
+{id:'gcs',name:'意識狀態評估（GCS）',groups:[
+ {name:'張眼反應',ref:'E',items:[['e1','能說出此項評分標準（需說出所有分數所代表的意義）',2],['e2','測試方式（需正確指示病人）',2],['e3','說出結果（需說出此病人的得分為何）',2]]},
+ {name:'最佳語言表達',ref:'V',items:[['v1','能說出此項評分標準（需說出所有分數所代表的意義）',2],['v2','測試方式（需正確指示病人）',2],['v3','說出結果（需說出此病人的得分為何）',2]]},
+ {name:'最佳運動反應',ref:'M',items:[['m1','能說出此項評分標準（需說出所有分數所代表的意義）',2],['m2','測試方式（需正確指示病人）',2],['m3','說出結果（需說出此病人的得分為何）',2]]}]},
+{id:'pup',name:'瞳孔反應',groups:[{name:'',items:[
+ ['pu1','檢視雙眼瞳孔，使用瞳孔尺分別測量瞳孔直徑',1],['pu2','比較雙側瞳孔',1],['pu3','說出檢查內容：瞳孔大小、形狀及對稱性',3],['pu4','說出正常結果：瞳孔約 3–5 mm、圓而規則、雙眼等大',3],
+ ['pu5','對光反射測量：調暗光線，請個案注視遠方；由側方照射一眼，觀察受光眼的直接對光反射',1],['pu6','說出結果：正常時受光眼出現瞳孔收縮，且兩側反應對稱',1]]}]},
+{id:'mus',name:'肌肉強度',groups:[{name:'',ref:'MS',items:[
+ ['ms1','上肢肌肉強度：評估兩側上肢自主性移動、或對抗阻力之主動性運動',3],['ms2','下肢肌肉強度：評估兩側下肢自主性移動、或對抗阻力之主動性運動',3],['ms3','結果判讀：比較左右側肌力是否對稱，依 0–5 級記錄各主要肌群之肌力',2]]}]},
+{id:'end',name:'評估結束',groups:[{name:'',items:[['en1','將意識狀態評估、肌肉強度與瞳孔反應紀錄於「神經系統狀態紀錄表」中',1]]}]},
+{id:'sen',name:'感覺系統',groups:[
+ {name:'震動覺',items:[['vb1','指示閉眼',1],['vb2','用音叉敲後緊置個案，先從遠端關節測量',1],['vb3','上肢及下肢至少各 2 個關節（需說出關節名稱）',2],['vb4','指示病人表達感覺或何時音叉停止',1],['vb5','同時比較兩側，說出結果',1]]},
+ {name:'實體感覺',items:[['st1','讓個案閉眼',1],['st2','將個案熟悉兩種物品輪置於手掌心，請其說出名稱',1],['st3','另一側亦需做',1],['st4','說出結果比較兩側，是否可正確辨識',1]]}]},
+{id:'cer',name:'小腦功能：運動路徑',groups:[
+ {name:'步態測試',items:[['ga1','指示病人，直線走路再轉回',1],['ga2','指示病人，以腳跟走，呈一直線',1],['ga3','指示病人，腳趾接腳跟走，呈一直線',1],['ga4','指示病人，原地蹲、跳，可自由活動',1],['ga5','說出結果：視診其平衡性，動作可協調',1]]},
+ {name:'平衡測試（Romberg）',items:[['ba1','指示病人：雙腳靠攏站立',1],['ba2','不扶持閉眼 20 秒，可否維持直立姿勢',1],['ba3','觀察是否搖動',1],['ba4','說出結果：閉眼後若明顯搖晃、失去平衡或倒向一側，為 Romberg test (+)，屬異常',1]]},
+ {name:'協調能力：上肢快速交替',items:[['ra1','指示病人：手舉起翻轉拍打大腿',1],['ra2','比較兩側',1],['ra3','說出結果：速度適中可接替下一個動作、節律有順序及穩定不中斷',2]]},
+ {name:'協調能力：上肢點至點',items:[['fn1','指示病人：距 18 英吋（46 公分）',1],['fn2','睜眼輪替碰檢查者食指和自己的鼻子，先固定來回指，再移動食指來回指',1],['fn3','閉眼輪替碰檢查者食指和自己的鼻子，先固定來回指',1],['fn4','比較兩側',1],['fn5','說出結果：點到準確(1)、平穩手不晃動速度均勻(1)',2]]},
+ {name:'協調能力：下肢快速交替',items:[['rl1','指示病人：雙腳底輪向下踢踏檢查者之手',1],['rl2','比較兩側',1],['rl3','說出結果：速度不緩慢(1)、節律有順序(1)及穩定不笨拙(1)',3]]},
+ {name:'協調能力：下肢點至點',items:[['hs1','指示病人坐下（或躺著），閉眼',1],['hs2','方式：單腳置另一膝蓋上，腳跟沿脛骨移至大腳趾',1],['hs3','比較兩側',1],['hs4','說出結果：兩側平穩和準確性',1]]}]},
+{id:'ulr',name:'上肢反射',groups:[
+ {name:'肱三頭肌反射',ref:'DTR',items:[['tr1','指示病人，方式：檢查者抓住其上臂，使其肌肉放鬆',1],['tr2','確認部位，由手肘後直接敲',1],['tr3','同時比較兩側，說出結果：三頭肌收縮及手肘伸展；並依深層肌腱反射 0–4+ 分級',1],['tr4','兩側異同',1]]},
+ {name:'肱二頭肌反射',ref:'DTR',items:[['bi1','指示病人，方式：檢查者抓住其上臂，使其肌肉放鬆',1],['bi2','確認部位：將手指置於二頭肌腱上，對準指頭敲打',1],['bi3','同時比較兩側，說出結果：二頭肌收縮；並依深層肌腱反射 0–4+ 分級',1],['bi4','兩側異同',1]]}]},
+{id:'llr',name:'下肢反射',groups:[
+ {name:'膝反射',ref:'DTR',items:[['kn1','指示病人，方式：雙腳屈膝懸空',1],['kn2','確認部位，迅速敲擊髕骨下方之膝肌腱（patellar tendon）',1],['kn3','同時比較兩側',1],['kn4','說出及指出結果：四頭肌收縮及膝蓋伸展；並依深層肌腱反射 0–4+ 分級',1]]},
+ {name:'跟腱反射',ref:'DTR',items:[['ac1','指示病人，方式：微屈膝，腳踝背屈',1],['ac2','確認部位(1)，敲打 Achilles 肌腱(1)',2],['ac3','同時比較兩側',1],['ac4','說出及指出結果：踝關節蹠屈及小腿肌肉收縮；並依深層肌腱反射 0–4+ 分級',2]]},
+ {name:'足底反射',items:[['pl1','使用中度尖銳物（如敲診槌柄端）',1],['pl2','說出並做出：由足跟沿足底外側向前劃至前足，再向內側劃向大拇趾方向',2],['pl3','比較兩側',1],['pl4','說出結果：正常成人為足趾屈曲（down-going toes）；若大拇趾背屈並伴其他足趾扇形張開為 Babinski sign (+)，屬異常',2]]}]}
+];
+const DED=[['d1','洗手：檢查前',1],['d2','洗手：檢查後',1],['d3','每換個案檢查時，需洗手',2],['d4','頭髮不可觸及個案，若過長則需紮起，並梳整齊',2],['d5','注意個案環境的隱密性',2],['d6','適當保持個案身體隱私',2],['d7','主動與個案互動',2],['d8','隨時注意個案之反應',2],['d9','指甲不可過長',2]];
+const RULES=['以上檢查，測試均需一邊做一邊口述所測項目與檢查結果，未能說出施測項目或結果者，於該項不得分。','本表所列未比較兩側不得分。','下列項目未做到者需倒扣分數。'];
+const ITEMS=[]; R.forEach(s=>s.groups.forEach(g=>g.items.forEach(([id,t,p])=>ITEMS.push({id,t,p,sec:s.id,secName:s.name,grp:g.name}))));
+const ITEM=Object.fromEntries(ITEMS.map(i=>[i.id,i]));
+const MAX=ITEMS.reduce((a,i)=>a+i.p,0);
+const SEC_MAX=Object.fromEntries(R.map(s=>[s.id,ITEMS.filter(i=>i.sec===s.id).reduce((a,i)=>a+i.p,0)]));
+const GRADES=['一年級','二年級','三年級','四年級','五年級'];
+const EXAM_TYPES=['期中考','期末考','補考'];
+
+/* ================= 測驗題庫 ================= */
+const QB=[
+['GCS 張眼反應中，病人「對說話聲音才睜眼」應得幾分？',['4 分','3 分','2 分','1 分'],1,'4 自發睜眼、3 對說話聲音睜眼、2 對刺激睜眼、1 無反應。'],
+['GCS 最佳語言表達 4 分代表什麼？',['人、時、地皆正確回答','混亂對話：人、時、地其中一項不正確','只能說出可理解的單字','只有呻吟聲'],1,'4 分為 confused conversation，人時地其中一項回答不正確。'],
+['給予刺激時肢體異常彎曲（去皮質僵直），最佳運動反應得幾分？',['4 分','3 分','2 分','1 分'],1,'3 分為 decorticate posture；2 分為去大腦僵直的伸張反應。'],
+['給予刺激時肢體呈伸張反應（decerebrate posture），最佳運動反應得幾分？',['4 分','3 分','2 分','1 分'],2,'去大腦僵直為 2 分。'],
+['病人有氣管內管無法說話，語言反應應如何記錄？',['1','C','E','T'],2,'E 代表氣管內管；T 代表氣管造口。'],
+['病人因眼部腫脹無法評估睜眼反應，應記錄為？',['1','C','E','T'],1,'C（closed）表示眼部腫脹無法評估。'],
+['評分表所列成人正常瞳孔大小約為？',['1–2 mm','3–5 mm','6–8 mm','依年齡而定，無範圍'],1,'正常結果：約 3–5 mm、圓而規則、雙眼等大。'],
+['測量對光反射時，下列何者正確？',['光線調亮，請個案注視光源','由正前方直接照射雙眼','調暗光線，請個案注視遠方，由側方照射一眼','只需檢查單側即可'],2,'調暗光線、注視遠方、由側方照射一眼，觀察受光眼直接對光反射並比較兩側。'],
+['肌力「可抗重力活動，但無法抵抗阻力」為幾級？',['5 級','4 級','3 級','2 級'],2,'3 級可抗重力；4 級可抗部分阻力；5 級可抗完全阻力。'],
+['肌力「可見或可觸及收縮但無關節活動」為幾級？',['0 級','1 級','2 級','3 級'],1,'1 級：只有收縮、無關節活動；0 級：無肌肉收縮。'],
+['深層肌腱反射 2+ 代表？',['無反射','反射較弱','正常','反射強烈伴隨陣攣'],2,'0 無、1+ 較弱、2+ 正常、3+ 稍強、4+ 強烈伴陣攣。'],
+['深層肌腱反射 4+ 代表？',['反射較弱','正常','反射稍強','反射強烈伴隨陣攣（clonus）'],3,'4+ 為反射強烈並伴隨陣攣。'],
+['Romberg test 中，個案需不扶持閉眼維持直立多久？',['5 秒','10 秒','20 秒','60 秒'],2,'評分表規定不扶持閉眼 20 秒。'],
+['下列何者為 Romberg test (+)？',['睜眼時輕微晃動','閉眼後明顯搖晃、失去平衡或倒向一側','閉眼後仍可維持直立','雙腳無法靠攏'],1,'閉眼後明顯搖晃、失去平衡或倒向一側為陽性，屬異常。'],
+['上肢點至點測試，檢查者食指與個案的距離約為？',['10 公分','30 公分','46 公分（18 英吋）','60 公分（24 英吋）'],2,'距 18 英吋（46 公分）。'],
+['震動覺測試應從哪裡開始測量？',['近端關節','遠端關節','胸骨','任一部位皆可'],1,'用音叉敲後緊置個案，先從遠端關節測量；上下肢至少各 2 個關節。'],
+['正常成人足底反射的結果為？',['大拇趾背屈','足趾屈曲（down-going toes）','足趾扇形張開','無任何反應'],1,'正常為足趾屈曲；大拇趾背屈並伴其他足趾扇形張開為 Babinski sign (+)。'],
+['膝反射的敲擊部位為？',['髕骨上方股四頭肌','髕骨下方之膝肌腱','脛骨前緣','膕窩'],1,'迅速敲擊髕骨下方膝肌腱，結果為四頭肌收縮及膝蓋伸展。'],
+['肱三頭肌反射的正常結果為？',['二頭肌收縮及手肘彎曲','三頭肌收縮及手肘伸展','手腕背屈','肩關節外展'],1,'三頭肌收縮及手肘伸展，並依 DTR 0–4+ 分級。'],
+['跟腱反射的正常結果為？',['踝關節背屈','踝關節蹠屈及小腿肌肉收縮','膝蓋伸展','足趾扇形張開'],1,'敲打 Achilles 肌腱，結果為踝關節蹠屈及小腿肌肉收縮。'],
+['實體感覺測試的正確做法是？',['睜眼辨識一種物品','閉眼，將兩種熟悉物品輪置於手掌心並請其說出名稱，兩側都要做','只測慣用手','以音叉碰觸手掌'],2,'需閉眼、兩種熟悉物品、另一側亦需做，並比較兩側。'],
+['評分表注意事項中，「未比較兩側」的項目如何計分？',['扣 1 分','扣 2 分','該項不得分','不影響分數'],2,'本表所列未比較兩側不得分。']
+];
+
+/* ================= 工具 ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate=t=>{if(!t)return '';const d=new Date(t);return d.toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'})};
+const fmtDT=t=>{if(!t)return '';const d=new Date(t);return d.toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})};
+const fmtDur=s=>{s=Math.max(0,Math.round(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const SID_RE=/^[A-Za-z0-9]{4,15}$/;
+const lsGetRaw=k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}};
+const lsSetRaw=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+const lsDelRaw=k=>{try{localStorage.removeItem(k)}catch{}};
+function toast(msg){const el=document.createElement('div');el.className='toast';el.setAttribute('role','status');el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),2600)}
+function tagsFor(t){const a=[];if(/說出|口述/.test(t))a.push('<span class="chip say">口述</span>');if(/兩側|雙側|另一側/.test(t))a.push('<span class="chip side">比較兩側</span>');return a.join('')}
+function scoreOf(scores,ded){let raw=0,n=0;ITEMS.forEach(i=>{const v=scores[i.id];if(v!=null){raw+=v;n++}});let d=0;DED.forEach(([id,,p])=>{if(ded[id])d+=p});return{raw,ded:d,total:Math.max(0,raw-d),n}}
+
+/* ================= 平台與資料存取 ================= */
+const P={db:null,user:null,dl:null,uid:null,ready:false,cloud:false,isTeacher:true};
+const localWatchers=[];
+const LS='nn:';
+function lsList(coll){const out=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith(LS+coll+'/')){const rest=k.slice((LS+coll+'/').length);if(!rest.includes('/')){const v=lsGetRaw(k);if(v)out.push({_id:rest,...v})}}}}catch{}return out}
+function notifyLocal(path){const coll=path.split('/')[0];localWatchers.forEach(w=>{if(w.coll===coll||w.path===path)w.run()})}
+const Store={
+ async get(path){if(P.db){const s=await P.db.doc(path).get();return s.exists?s.data():null}return lsGetRaw(LS+path)},
+ async set(path,data){if(P.db)return P.db.doc(path).set(data);lsSetRaw(LS+path,data);notifyLocal(path)},
+ async del(path){if(P.db)return P.db.doc(path).delete();lsDelRaw(LS+path);notifyLocal(path)},
+ watchColl(coll,cb,err){if(P.db)return P.db.collection(coll).onSnapshot(s=>cb(s.docs.map(d=>({_id:d.id,...d.data()})),s.metadata),err);const w={coll,run:()=>cb(lsList(coll),{fromCache:false})};localWatchers.push(w);w.run();return()=>{}},
+ watchDoc(path,cb,err){if(P.db)return P.db.doc(path).onSnapshot(s=>cb(s.exists?s.data():null,s.metadata),err);const w={path,run:()=>cb(lsGetRaw(LS+path),{fromCache:false})};localWatchers.push(w);w.run();return()=>{}}
+};
+let writeChain=Promise.resolve();
+function queuedSet(path,data){const p=writeChain.then(()=>Store.set(path,data));writeChain=p.catch(()=>{});return p}
+
+async function initPlatform(){
+  if(window.claude&&typeof window.claude.use==='function'){
+    try{
+      const [db,user,dl]=await Promise.all([claude.use('db').catch(()=>null),claude.use('user').catch(()=>null),claude.use('downloads').catch(()=>null)]);
+      P.db=db;P.user=user;P.dl=dl;
+      if(user){try{P.uid=await user.id()}catch{}try{P.isTeacher=!!(await user.canEdit())}catch{P.isTeacher=false}}
+    }catch{}
+  }
+  P.cloud=!!P.db;P.ready=true;
+  const s=$('#status');
+  if(P.cloud){s.textContent='雲端同步';s.className='status ok';s.title='資料儲存在雲端，教師端可即時看到'}
+  else{s.textContent='本機模式';s.className='status local';s.title='目前無法連到雲端資料庫，資料只存在這台裝置的瀏覽器'}
+  render();
+}
+
+/* ================= 狀態 ================= */
+const st={
+  view:'student',
+  student:lsGetRaw('nn-student'),
+  stuTab:'learn',
+  prac:null, quiz:null, mine:[], mineLoaded:false, stuCloudOK:true,
+  tTab:'overview', f:{term:'',type:'',grade:'',group:'',q:''},
+  exams:[],practice:[],config:null,tLoaded:false,tSubs:false,tSlow:false,
+  exam:null, examSetup:lsGetRaw('nn-exam-setup')||{}
+};
+function cfg(){return Object.assign({term:'115-1',passScore:60,examMinutes:15,roster:[]},st.config||{})}
+
+/* ================= 路由 ================= */
+function route(){updateTeacherBadge();const h=(location.hash||'#student').slice(1);st.view=['student','teacher','exam'].includes(h)?h:'student';['student','teacher','exam'].forEach(v=>{const a=$('#nav-'+v);if(v===st.view)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});render()}
+window.addEventListener('hashchange',route);
+
+function render(){
+  stopTick();
+  $('#bar').innerHTML='';$('#sbar').innerHTML='';
+  if(st.view==='student')renderStudent();
+  else if(!P.ready){$('#main').innerHTML='<div class="panel">正在確認身分…</div>'}
+  else if(!P.isTeacher){$('#main').innerHTML=`<div class="panel"><h2>僅限教師使用</h2><p class="muted">教師管理與考試評分只開放給此網頁的擁有者與編輯者。若您是授課教師，請請擁有者在分享設定中將您加為「編輯者」。學生請使用「學生練習」。</p><a class="btn pri" href="#student">前往學生練習</a></div>`}
+  else if(!teacherUnlocked())renderTeacherLogin();
+  else{ensureTeacherSubs();if(st.view==='teacher')renderTeacher();else renderExam()}
+}
+
+/* ================= 共用：評分表元件 ================= */
+function refTable(k){const r=REFS[k];return `<details class="ref"><summary>查看${esc(r.title)}</summary><table class="reftab">${r.rows.map(([a,b])=>`<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join('')}</table></details>`}
+const SEC_CODE={pre:'準備',gcs:'GCS',pup:'瞳孔',mus:'肌力',end:'紀錄',sen:'感覺',cer:'小腦',ulr:'上肢反射',llr:'下肢反射'};
+const DTRO=['','0','1+','2+','3+','4+'];
+const FIND={
+ gcs:[['E','E 睜眼',['','4','3','2','1','C']],['V','V 語言',['','5','4','3','2','1','E','T']],['M','M 運動',['','6','5','4','3','2','1']]],
+ pup:[['L','左眼 mm','num'],['R','右眼 mm','num'],['light','對光反射',['','兩側皆收縮','左側遲緩／無','右側遲緩／無']]],
+ mus:[['RU','右上肢',['','5','4','3','2','1','0']],['LU','左上肢',['','5','4','3','2','1','0']],['RL','右下肢',['','5','4','3','2','1','0']],['LL','左下肢',['','5','4','3','2','1','0']]],
+ sen:[['vib','震動覺',['','兩側正常','左側減弱','右側減弱','兩側減弱']],['ster','實體感覺',['','兩側可辨識','左側無法辨識','右側無法辨識']]],
+ cer:[['gait','步態',['','平穩協調','不穩']],['rom','Romberg',['','陰性 (−)','陽性 (+)']],['coord','協調',['','正常','左側異常','右側異常']]],
+ ulr:[['TRR','肱三頭 右',DTRO],['TRL','肱三頭 左',DTRO],['BIR','肱二頭 右',DTRO],['BIL','肱二頭 左',DTRO]],
+ llr:[['KNR','膝 右',DTRO],['KNL','膝 左',DTRO],['ACR','跟腱 右',DTRO],['ACL','跟腱 左',DTRO],['BBR','足底 右',['','足趾屈曲','Babinski (+)']],['BBL','足底 左',['','足趾屈曲','Babinski (+)']]]
+};
+function interpFor(sec,f){f=f||{};
+  if(sec==='gcs'){const n=k=>/^\d$/.test(f[k]||'')?+f[k]:null;const e=n('E'),v=n('V'),m=n('M');if(f.E&&f.V&&f.M){const tag=`E${f.E}V${f.V}M${f.M}`;return (e!=null&&v!=null&&m!=null)?`GCS ${e+v+m} 分（${tag}）`:`GCS ${tag}`}return ''}
+  if(sec==='pup'){const l=parseFloat(f.L),r=parseFloat(f.R);if(isNaN(l)||isNaN(r))return '';const ok=x=>x>=3&&x<=5;return ok(l)&&ok(r)&&l===r?'3–5 mm 且兩眼等大':(l!==r?'注意：兩眼不等大':'注意：超出 3–5 mm')}
+  return ''}
+function findSummary(find){if(!find)return '';return R.filter(s=>find[s.id]&&(find[s.id].res||find[s.id].note||Object.values(find[s.id].f||{}).some(Boolean))).map(s=>{const d=find[s.id];const fs=(FIND[s.id]||[]).filter(([k])=>d.f&&d.f[k]).map(([k,l])=>`${l} ${d.f[k]}`);const it=interpFor(s.id,d.f);return `${SEC_CODE[s.id]}：${d.res||''}${fs.length?'（'+fs.join('、')+'）':''}${it?' '+it:''}${d.note?' '+d.note:''}`}).join('；')}
+function findBlock(ctx,s,find,mode){
+  if(s.id==='pre'||s.id==='end')return '';
+  const d=(find&&find[s.id])||{};const f=d.f||{};
+  if(mode==='learn')return '';
+  if(mode==='view'){const sum=findSummary({[s.id]:d});return sum?`<div class="fview"><b>評估發現</b>　${esc(sum.replace(/^[^：]*：/,''))}</div>`:''}
+  let h=`<div class="finds"><div class="lab">評估發現（記錄個案結果）</div><div class="rd" role="group" aria-label="${esc(s.name)} 結果">${['正常','異常'].map(v=>`<button type="button" data-act="find-res" data-ctx="${ctx}" data-sec="${s.id}" data-v="${v}" aria-pressed="${d.res===v}">${v}</button>`).join('')}</div>`;
+  (FIND[s.id]||[]).forEach(([k,l,o])=>{const id=`fd-${ctx}-${s.id}-${k}`;
+    if(o==='num')h+=`<label class="f" for="${id}">${esc(l)}<input type="number" step="0.5" min="1" max="9" id="${id}" data-find="${k}" data-ctx="${ctx}" data-sec="${s.id}" value="${esc(f[k]||'')}" style="width:84px"></label>`;
+    else h+=`<label class="f" for="${id}">${esc(l)}<select id="${id}" data-find="${k}" data-ctx="${ctx}" data-sec="${s.id}">${o.map(v=>`<option value="${esc(v)}" ${f[k]===v?'selected':''}>${v===''?'—':esc(v)}</option>`).join('')}</select></label>`});
+  h+=`<span class="interp" id="fi-${ctx}-${s.id}">${esc(interpFor(s.id,f))}</span>`;
+  h+=`<label class="f grow" for="fn-${ctx}-${s.id}">說明<input type="text" id="fn-${ctx}-${s.id}" data-find="_note" data-ctx="${ctx}" data-sec="${s.id}" value="${esc(d.note||'')}" placeholder="異常時描述所見"></label></div>`;
+  return h;
+}
+function itemRow(ctx,i,scores,mode){
+  const v=scores?scores[i.id]:undefined;
+  const cls=mode==='learn'||v==null?'':v===i.p?'full':v===0?'zero':'part';
+  let ctl='';
+  if(mode==='view')ctl=`<span class="got">${v==null?'—':v} / ${i.p}</span>`;
+  else if(mode==='score'){let b='';
+    if(i.p===1)b=`<button type="button" class="zero" data-act="score" data-ctx="${ctx}" data-id="${i.id}" data-v="0" aria-pressed="${v===0}" aria-label="未執行">✗</button><button type="button" class="full" data-act="score" data-ctx="${ctx}" data-id="${i.id}" data-v="1" aria-pressed="${v===1}" aria-label="有執行">✓ 1</button>`;
+    else for(let k=0;k<=i.p;k++)b+=`<button type="button" class="${k===0?'zero':k===i.p?'full':'part'}" data-act="score" data-ctx="${ctx}" data-id="${i.id}" data-v="${k}" aria-pressed="${v===k}" aria-label="給 ${k} 分">${k===0?'✗':k===i.p?'✓ '+k:k}</button>`;
+    ctl=`<div class="sg" role="group" aria-label="${esc(i.t.slice(0,20))} 得分">${b}</div>`}
+  return `<div class="it ${cls}" id="it-${ctx}-${i.id}"><div class="t">${esc(i.t)}<span class="pts">(${i.p} 分)</span>${tagsFor(i.t)}</div>${ctl}</div>`;
+}
+const PALETTES={
+ mint:{name:'薄荷蜜桃',paper:'#F5FAF8',accent:'#3E9A8B',soft:'#E1F3EE',sun:'#F6C987',peach:'#F4A99A',sky:'#9CC7E8',lav:'#C9B8E8',hero:['#D9F1EA','#FDE6DE','#FFF3D6'],sec:['#4FAE9E','#62B2D2','#86A3E2','#A596DE','#D195C8','#EE9AA3','#F1A986','#E5BB68','#94C27C']},
+ lavender:{name:'晴空薰衣草',paper:'#F7F7FC',accent:'#6B72CF',soft:'#ECEDFB',sun:'#F5CF8E',peach:'#F2A7B6',sky:'#8EC5F0',lav:'#B8B2EE',hero:['#E2E4FB','#DDEEFC','#FBE5EE'],sec:['#7178D3','#8795E3','#78AEE8','#72C2D6','#7FC8B1','#AFC584','#E5BE77','#EEA592','#E497B6']},
+ sakura:{name:'櫻花奶茶',paper:'#FBF7F5',accent:'#C46F7C',soft:'#F9E6E8',sun:'#E9C79A',peach:'#E3B18F',sky:'#A7BFD6',lav:'#C9B5D6',hero:['#FBE1E4','#F5EADD','#EEE4F2'],sec:['#CB7D89','#D6948A','#D5A780','#C5B585','#A4BA8E','#88B3A3','#8EAAC4','#A49ECB','#C096BE']},
+ matcha:{name:'森林抹茶',paper:'#F5F8F0',accent:'#5E8A4C',soft:'#E7F0DE',sun:'#E6C676',peach:'#DFA885',sky:'#94B9C4',lav:'#B9B4CF',hero:['#E0EED4','#F4EFD8','#DDEDEA'],sec:['#6A9858','#83A660','#A2AE66','#C4AE69','#D49B70','#C68C82','#9C9EB6','#7CA3B0','#6CA292']}
+};
+function palKey(){const k=lsGetRaw('nn-palette');return PALETTES[k]?k:'mint'}
+function mixHex(a,b,w){const h=x=>[1,3,5].map(i=>parseInt(x.slice(i,i+2),16));const A=h(a),B=h(b);return '#'+A.map((v,i)=>Math.round(v*w+B[i]*(1-w)).toString(16).padStart(2,'0')).join('')}
+function isDark(){const t=document.documentElement.getAttribute('data-theme');if(t)return t==='dark';return matchMedia('(prefers-color-scheme: dark)').matches}
+function applyPalette(){const p=PALETTES[palKey()];const r=document.documentElement.style;const d=isDark();const dk=c=>mixHex(c,'#1E2525',.16);const lt=c=>mixHex(c,'#FFFFFF',.62);
+  const set=(k,v)=>r.setProperty(k,v);
+  if(!d){set('--paper',p.paper);set('--accent',p.accent);set('--accent-soft',p.soft);set('--accent-ink','#FFFFFF');set('--sun',p.sun);set('--teal',p.peach);set('--sky',p.sky);set('--lav',p.lav);p.hero.forEach((c,i)=>set('--hero'+(i+1),c))}
+  else{['--paper'].forEach(k=>r.removeProperty(k));set('--accent',lt(p.accent));set('--accent-soft',dk(p.accent));set('--accent-ink','#14201E');set('--sun',lt(p.sun));set('--teal',lt(p.peach));set('--sky',lt(p.sky));set('--lav',lt(p.lav));p.hero.forEach((c,i)=>set('--hero'+(i+1),dk(c)))}
+  const sw=document.getElementById('pal-sw');if(sw)sw.innerHTML=[p.accent,p.peach,p.sun].map(c=>`<i style="background:${c}"></i>`).join('');
+  const menu=document.getElementById('pal-menu');if(menu)menu.innerHTML=Object.entries(PALETTES).map(([k,v])=>`<button type="button" role="menuitemradio" aria-checked="${k===palKey()}" data-act="palette" data-pal="${k}"><span class="sw">${[v.accent,v.peach,v.sun,v.sky].map(c=>`<i style="background:${c}"></i>`).join('')}</span>${v.name}</button>`).join('');
+}
+try{const mq=matchMedia('(prefers-color-scheme: dark)');if(mq.addEventListener)mq.addEventListener('change',applyPalette);else if(mq.addListener)mq.addListener(applyPalette)}catch{}
+try{new MutationObserver(applyPalette).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']})}catch{}
+function secColors(){return PALETTES[palKey()].sec}
+function cheer(t){return t>=95?'太強了，幾乎完美！':t>=85?'表現很棒，再磨幾個細節！':t>=cfg().passScore?'過關了，繼續加油！':'別灰心，針對下面項目再練一次！'}
+function confetti(){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;const c=document.createElement('canvas');c.id='confetti';document.body.appendChild(c);const x=c.getContext('2d');const W=c.width=innerWidth,H=c.height=innerHeight;const P0=PALETTES[palKey()];const cols=[P0.accent,P0.sun,P0.peach,P0.sky,P0.lav];const ps=Array.from({length:140},()=>({x:W/2+(Math.random()-.5)*W*.3,y:H*.35,vx:(Math.random()-.5)*12,vy:-Math.random()*12-4,r:Math.random()*6+4,c:cols[Math.random()*cols.length|0],a:Math.random()*6}));let t=0;(function f(){x.clearRect(0,0,W,H);ps.forEach(p=>{p.vy+=.35;p.x+=p.vx;p.y+=p.vy;p.a+=.2;x.save();x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.fillRect(-p.r/2,-p.r/4,p.r,p.r/2);x.restore()});if(++t<110)requestAnimationFrame(f);else c.remove()})()}
+function sheetHTML(ctx,scores,ded,mode,find){ // mode: 'score' | 'learn' | 'view'
+  let h='<div class="sheet">';
+  R.forEach((s,si)=>{
+    const got=ITEMS.filter(i=>i.sec===s.id).reduce((a,i)=>a+(scores&&scores[i.id]!=null?scores[i.id]:0),0);
+    h+=`<section class="csec" id="sec-${ctx}-${s.id}" style="--sc:${secColors()[si%9]}"><div class="csec-h"><span class="code">${esc(SEC_CODE[s.id])}</span><h2>${esc(s.name)}</h2>`;
+    h+=mode==='learn'?`<span class="sub">${SEC_MAX[s.id]} 分</span>`:`<span class="sub" id="ss-${ctx}-${s.id}">${got} / ${SEC_MAX[s.id]}</span>`;
+    if(mode==='score')h+=`<button class="btn sm" data-act="fillsec" data-ctx="${ctx}" data-sec="${s.id}">本段全對</button>`;
+    h+=`</div>`;
+    if(s.note)h+=`<div class="snote">${esc(s.note)}</div>`;
+    s.groups.forEach(g=>{
+      if(g.name)h+=`<div class="subh">${esc(g.name)}</div>`;
+      if(g.ref)h+=refTable(g.ref);
+      g.items.forEach(([id])=>h+=itemRow(ctx,ITEM[id],scores,mode));
+    });
+    h+=findBlock(ctx,s,find,mode);
+    h+=`</section>`;
+  });
+  const dsum=DED.reduce((a,[id,,p])=>a+(ded&&ded[id]?p:0),0);
+  h+=`<section class="csec" id="sec-${ctx}-ded" style="--sc:#8A8F98"><div class="csec-h"><span class="code">倒扣</span><h2>倒扣項目</h2><span class="sub" id="ds-${ctx}">${mode==='learn'?'最多 −17':'−'+dsum}</span></div>`;
+  if(mode==='score')h+=`<div class="snote">下列項目<b>未做到</b>才勾選。</div>`;
+  DED.forEach(([id,t,p])=>{
+    if(mode==='score')h+=`<label class="dedrow"><input type="checkbox" id="ded-${ctx}-${id}" data-act="ded" data-ctx="${ctx}" data-id="${id}" ${ded&&ded[id]?'checked':''}><span>${esc(t)}</span><span class="minus">−${p}</span></label>`;
+    else h+=`<div class="dedrow" style="cursor:default"><span>${esc(t)}</span><span class="minus" style="${mode==='view'&&!(ded&&ded[id])?'color:var(--muted);font-weight:400':''}">${mode==='view'?(ded&&ded[id]?'已扣 −'+p:'未扣'):'−'+p}</span></div>`;
+  });
+  h+=`</section></div>`;
+  return h;
+}
+function sectionJump(ctx){return `<div class="jump">${R.map(s=>`<button class="btn sm" data-act="jump" data-target="sec-${ctx}-${s.id}">${esc(s.name.replace(/（.*?）|：.*/g,''))}</button>`).join('')}</div>`}
+function ctxState(ctx){return ctx==='p'?st.prac:st.exam}
+function refreshItem(ctx,id){
+  const S=ctxState(ctx);const i=ITEM[id];const v=S.scores[id];const el=document.getElementById(`it-${ctx}-${id}`);if(!el)return;
+  el.classList.remove('full','part','zero');if(v!=null)el.classList.add(v===i.p?'full':v===0?'zero':'part');
+  el.querySelectorAll('.sg button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===v)));
+  const ss=document.getElementById(`ss-${ctx}-${i.sec}`);if(ss){const got=ITEMS.filter(x=>x.sec===i.sec).reduce((a,x)=>a+(S.scores[x.id]??0),0);ss.textContent=`${got} / ${SEC_MAX[i.sec]}`}
+  const ch=document.getElementById(`chip-${ctx}-${i.sec}`);if(ch)ch.classList.toggle('done',ITEMS.filter(x=>x.sec===i.sec).every(x=>S.scores[x.id]!=null));
+}
+function refreshBar(ctx){
+  const S=ctxState(ctx);if(!S)return;const r=scoreOf(S.scores,S.ded);
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+  set(`b-${ctx}-n`,r.n);set(`b-${ctx}-ded`,r.ded?'−'+r.ded:'0');set(`b-${ctx}-tot`,r.total);
+  const pg=document.getElementById(`b-${ctx}-pg`);if(pg)pg.style.width=(r.n/ITEMS.length*100)+'%';
+  const ds=document.getElementById(`ds-${ctx}`);if(ds)ds.textContent='−'+r.ded;
+  const cd=document.getElementById(`chip-${ctx}-ded`);if(cd)cd.classList.toggle('done',r.ded>0);
+}
+function scoreBar(ctx,saveLabel,info){
+  const S=ctxState(ctx);
+  return `<div class="scorebar"><div class="sb-in">
+  <div class="sb-big"><b id="b-${ctx}-tot">0</b><small> / ${MAX}</small></div>
+  <div class="meter"><div class="lbl"><span>${esc(info)}</span><span><span class="num" id="b-${ctx}-n">0</span> / ${ITEMS.length} 項已評・倒扣 <span class="num" id="b-${ctx}-ded">0</span></span></div><div class="track"><i id="b-${ctx}-pg"></i></div></div>
+  <span class="sb-time" id="b-${ctx}-timer-wrap" title="${ctx==='x'?'剩餘時間':'用時'}"><span id="b-${ctx}-timer">00:00</span></span>
+  <div class="sb-act"><button class="btn sm" data-act="${ctx==='x'?'x-cancel':'p-cancel'}">${ctx==='x'?'取消':'放棄'}</button><button class="btn sm pri" data-act="${ctx==='x'?'x-save':'p-save'}">${saveLabel}</button></div>
+  </div><div class="sb-chips">${R.map(s=>`<button type="button" id="chip-${ctx}-${s.id}" class="${ITEMS.filter(x=>x.sec===s.id).every(x=>S.scores[x.id]!=null)?'done':''}" data-act="jump" data-target="sec-${ctx}-${s.id}">${esc(SEC_CODE[s.id])}</button>`).join('')}<button type="button" id="chip-${ctx}-ded" data-act="jump" data-target="sec-${ctx}-ded">倒扣</button></div></div>`;
+}
+let tickTimer=null;
+function startTick(ctx){stopTick();const S=ctxState(ctx);const upd=()=>{const el=document.getElementById(`b-${ctx}-timer`);if(!el||!S)return;const el2=(Date.now()-S.start)/1000;if(ctx==='x'&&S.limit){const rem=S.limit*60-el2;el.textContent=(rem<0?'+':'')+fmtDur(Math.abs(rem));document.getElementById('b-x-timer-wrap').classList.toggle('over',rem<0)}else el.textContent=fmtDur(el2)};upd();tickTimer=setInterval(upd,1000)}
+function stopTick(){if(tickTimer){clearInterval(tickTimer);tickTimer=null}}
+
+/* ================= 教師密碼 ================= */
+const DEFAULT_HASH='75932bc6a2ad68f7de5c101a370ec11c62c1addb5b81294e333838c66781cb63';
+const UNLOCK_HOURS=8;
+async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('nn-teacher:'+t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function teacherHash(){return lsGetRaw('nn-teacher-hash')||DEFAULT_HASH}
+function teacherUnlocked(){let u=null;try{u=JSON.parse(sessionStorage.getItem('nn-teacher-ok'))}catch{}return !!(u&&u.h===teacherHash()&&Date.now()-u.t<UNLOCK_HOURS*3600e3)}
+function setUnlocked(on){try{if(on)sessionStorage.setItem('nn-teacher-ok',JSON.stringify({h:teacherHash(),t:Date.now()}));else sessionStorage.removeItem('nn-teacher-ok')}catch{}}
+let pwFails=0,pwLockUntil=0;
+function renderTeacherLogin(){
+  $('#main').innerHTML=`<div class="login" style="grid-template-columns:1fr 1fr;max-width:820px">
+   <div class="l"><span class="kicker">教師專區</span><h1>教師入口</h1><p style="margin:10px 0 0">教師管理與考試評分需要輸入教師密碼。登入後在這個分頁保持 ${UNLOCK_HOURS} 小時，關閉分頁或按「教師登出」即上鎖。</p></div>
+   <form class="r" id="tlogin" novalidate><h2>輸入教師密碼</h2>
+    <div class="field"><label for="t-pw">教師密碼</label><input type="password" id="t-pw" autocomplete="current-password"></div>
+    <div class="err" id="t-err"></div>
+    <button class="btn pri" type="submit">進入${st.view==='exam'?'考試評分':'教師管理'}</button>
+    <a class="btn ghost" href="#student">返回學生練習</a></form></div>`;
+  const pw=$('#t-pw');pw.focus();
+  $('#tlogin').addEventListener('submit',async e=>{e.preventDefault();const err=$('#t-err');
+    if(Date.now()<pwLockUntil){err.textContent=`嘗試次數過多，請 ${Math.ceil((pwLockUntil-Date.now())/1000)} 秒後再試。`;return}
+    if(!pw.value){err.textContent='請輸入密碼。';return}
+    let h;try{h=await sha(pw.value)}catch{err.textContent='此瀏覽器不支援密碼驗證，請改用最新版 Chrome、Edge 或 Safari。';return}
+    if(h===teacherHash()){pwFails=0;setUnlocked(true);updateTeacherBadge();render()}
+    else{pwFails++;pw.value='';if(pwFails>=5){pwLockUntil=Date.now()+30000;pwFails=0;err.textContent='密碼錯誤次數過多，請 30 秒後再試。'}else err.textContent=`密碼錯誤，請再試一次（${pwFails}/5）。`}});
+}
+function updateTeacherBadge(){const b=document.getElementById('t-logout');if(b)b.hidden=!teacherUnlocked()}
+
+/* ================= 學生端 ================= */
+function renderStudent(){
+  const m=$('#main');
+  if(!st.student){
+    m.innerHTML=`<div class="login">
+      <div class="l"><span class="kicker">健康檢查與評估（含實習）・技術練習</span><h1>運動神經與<br>反射評估系統</h1>
+        <svg class="pulse" viewBox="0 0 400 70" preserveAspectRatio="none" aria-hidden="true"><path opacity=".35" d="M0 40 H90 L105 40 L118 10 L132 62 L146 26 L156 40 H230 L243 40 L254 18 L266 56 L278 40 H400"/><path class="trace" d="M0 40 H90 L105 40 L118 10 L132 62 L146 26 L156 40 H230 L243 40 L254 18 L266 56 L278 40 H400"/></svg>
+        <p style="margin:0">依本學期評分標準設計：${R.length} 大段、${ITEMS.length} 個評分項目，滿分 ${MAX} 分。</p>
+        <ul class="feat"><li><b>評分標準</b>GCS、肌力、DTR 分級一次看</li><li><b>技術練習</b>自評或同儕互評，自動算分</li><li><b>小測驗</b>隨機 10 題，立即解析</li><li><b>我的紀錄</b>看見每一次的進步</li></ul>
+      </div>
+      <form class="r" id="login-form" novalidate>
+        <h2>學生登入</h2><p class="muted" style="margin:-8px 0 0">輸入年級和學號就能開始練習。</p>
+        <div class="field"><label for="lg-grade">年級</label><select id="lg-grade">${GRADES.map(g=>`<option ${g==='二年級'?'selected':''}>${g}</option>`).join('')}</select></div>
+        <div class="field"><label for="lg-sid">學號</label><input type="text" id="lg-sid" placeholder="請輸入你的學號" autocomplete="off" autocapitalize="characters"></div>
+        <div class="field"><label for="lg-name">姓名（選填）</label><input type="text" id="lg-name" autocomplete="off"></div>
+        <div class="err" id="lg-err"></div>
+        <button class="btn pri" type="submit">開始使用</button>
+        <p class="small muted" style="margin:0">學號用來把你的練習紀錄交給授課老師，請正確填寫。</p>
+      </form></div>
+      <div class="teacher-entry">
+        <div><h2>教師入口</h2><p class="muted" style="margin:4px 0 0">管理學生名單、查看練習與考試狀況、匯出成績，或進行期中、期末考評分。限此網頁的擁有者與編輯者使用。</p></div>
+        <div class="row"><a class="btn pri" href="#teacher">進入教師管理</a><a class="btn" href="#exam">進入考試評分</a></div>
+      </div>`;
+    $('#login-form').addEventListener('submit',e=>{e.preventDefault();const sid=$('#lg-sid').value.replace(/\s+/g,'').toUpperCase();if(!SID_RE.test(sid)){$('#lg-err').textContent='請輸入學號（英文字母或數字，不含空白與符號）。';return}
+      st.student={grade:$('#lg-grade').value,sid,name:$('#lg-name').value.trim()};lsSetRaw('nn-student',st.student);st.mineLoaded=false;st.stuTab='learn';render()});
+    return;
+  }
+  if(!st.mineLoaded)loadMine();
+  const s=st.student;
+  const tabs=[['learn','評分標準與重點'],['practice','技術練習'],['quiz','小測驗'],['mine','我的紀錄']];
+  let h=`<div class="panel row" style="padding:12px 18px"><div><b>${esc(s.grade)} · <span class="num">${esc(s.sid)}</span></b>${s.name?' · '+esc(s.name):''}</div><span class="spacer" style="flex:1"></span><button class="btn sm ghost" data-act="logout">登出／更換學號</button></div>
+  <div class="tabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" aria-selected="${st.stuTab===k}" data-act="stutab" data-tab="${k}">${l}</button>`).join('')}</div>`;
+  if(st.stuTab==='learn')h+=stuLearn();
+  else if(st.stuTab==='practice')h+=stuPractice();
+  else if(st.stuTab==='quiz')h+=stuQuiz();
+  else h+=stuMine();
+  m.innerHTML=h;
+  if(st.stuTab==='practice'&&st.prac&&st.prac.phase==='run'){const pp=st.prac;$('#sbar').innerHTML=scoreBar('p','完成並儲存',`${s.grade}・${s.sid}${s.name?' '+s.name:''}・${pp.mode==='peer'?'同儕互評'+(pp.partner?'（'+pp.partner+'）':''):'自我評量'}`);refreshBar('p');startTick('p')}
+}
+function stuLearn(){
+  return `<div class="panel"><h2>考試注意事項</h2><ol style="margin:8px 0 0;padding-left:22px">${RULES.map(r=>`<li>${esc(r)}</li>`).join('')}</ol>
+  <p class="small muted" style="margin:10px 0 0">標示 <span class="chip say">口述</span> 的項目必須邊做邊說；標示 <span class="chip side">比較兩側</span> 的項目未比較兩側不得分。</p></div>
+  <div class="grid3">${Object.keys(REFS).map(k=>`<div class="panel" style="padding:14px"><h3 style="font-size:.98rem;margin-bottom:6px">${esc(REFS[k].title)}</h3><table class="reftab">${REFS[k].rows.map(([a,b])=>`<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join('')}</table></div>`).join('')}</div>
+  <div class="row"><h2 style="margin-right:auto">評分項目（共 ${ITEMS.length} 項，${MAX} 分）</h2>${sectionJump('l')}</div>
+  ${sheetHTML('l',{},{},'learn')}`;
+}
+function stuPractice(){
+  const p=st.prac;
+  if(!p||p.phase==='setup'){
+    return `<div class="panel"><h2>技術練習</h2><p class="muted">找一位同學當個案，依序操作並口述。可以自己勾選做到的項目，或請同學幫你評分（同儕互評）。完成後系統自動算分並記錄。</p>
+    <div class="row" style="align-items:flex-end">
+      <div class="field"><label for="pr-mode">練習方式</label><select id="pr-mode"><option value="self">自我檢核</option><option value="peer">同儕互評</option></select></div>
+      <div class="field"><label for="pr-partner">評分同學學號（同儕互評時填寫）</label><input type="text" id="pr-partner" autocomplete="off"></div>
+      <button class="btn pri" data-act="p-start">開始練習並計時</button></div></div>
+    ${lastMissedPanel()}`;
+  }
+  if(p.phase==='done'){
+    const r=scoreOf(p.scores,p.ded);
+    const missed=ITEMS.filter(i=>(p.scores[i.id]??0)<i.p);
+    return `<div class="panel"><p class="cheer">${cheer(r.total)}</p><div class="row"><h2 style="margin-right:auto">練習完成</h2><span class="chip ${r.total>=cfg().passScore?'good':'bad'}">${r.total>=cfg().passScore?'達及格標準':'未達及格標準'}</span></div>
+    <div class="grid3" style="margin-top:12px"><div class="kpi"><small>總分</small><b>${r.total}</b></div><div class="kpi"><small>項目得分／倒扣</small><b>${r.raw} / −${r.ded}</b></div><div class="kpi"><small>用時</small><b>${fmtDur(p.dur)}</b></div></div>
+    ${p.saveNote?`<div class="note" style="margin-top:12px">${p.saveNote}</div>`:''}
+    <h3 style="margin:16px 0 6px">需要加強的項目（${missed.length}）</h3>
+    ${missed.length?`<ul style="margin:0;padding-left:20px">${missed.map(i=>`<li><b>${esc(i.secName)}${i.grp?'・'+esc(i.grp):''}</b>：${esc(i.t)} <span class="muted num">(${p.scores[i.id]??0}/${i.p})</span></li>`).join('')}</ul>`:'<p>全部項目都拿到滿分。</p>'}
+    <div class="row" style="margin-top:14px"><button class="btn pri" data-act="p-new">再練習一次</button><button class="btn" data-act="stutab" data-tab="mine">查看我的紀錄</button></div></div>`;
+  }
+  return `<div class="note info small" style="max-width:1000px;width:100%;margin:0 auto">每一項做到請點 <b>✓</b>，沒做到點 <b>✗</b>；配分 2 分以上的項目可給部分分數。點錯再點一次即可取消。</div>${sheetHTML('p',p.scores,p.ded,'score',p.find)}<div class="row" style="max-width:1000px;width:100%;margin:0 auto;justify-content:flex-end"><button class="btn" data-act="p-cancel">放棄</button><button class="btn pri" data-act="p-save">完成並儲存</button></div>`;
+}
+function lastMissedPanel(){
+  const last=st.mine.filter(x=>x.type==='checklist').sort((a,b)=>b.date-a.date)[0];
+  if(!last)return '';
+  const missed=ITEMS.filter(i=>(last.scores?.[i.id]??0)<i.p);
+  return `<div class="panel"><h3>上次練習（${fmtDT(last.date)}，${last.total} 分）未拿滿分的項目</h3>${missed.length?`<ul style="margin:8px 0 0;padding-left:20px">${missed.slice(0,15).map(i=>`<li>${esc(i.secName)}：${esc(i.t)}</li>`).join('')}${missed.length>15?`<li class="muted">…另有 ${missed.length-15} 項</li>`:''}</ul>`:'<p>上次全部拿滿分。</p>'}</div>`;
+}
+function stuQuiz(){
+  const q=st.quiz;
+  if(!q)return `<div class="panel"><h2>小測驗</h2><p class="muted">從題庫（${QB.length} 題）隨機抽 10 題，內容涵蓋 GCS、瞳孔、肌力、DTR 分級與各項檢查的正確做法。每題作答後立即顯示解析。</p><button class="btn pri" data-act="q-start">開始測驗</button></div>`;
+  if(q.i>=q.qs.length){const sc=q.ans.filter(a=>a.ok).length;
+    return `<div class="panel"><p class="cheer">${sc>=9?'滿分等級，太厲害了！':sc>=7?'答得很好！':'再接再厲，看看解析吧！'}</p><h2>測驗完成：${sc} / ${q.qs.length}</h2>${q.saveNote?`<div class="note" style="margin-top:10px">${q.saveNote}</div>`:''}
+    <h3 style="margin:14px 0 6px">答錯的題目</h3>${q.ans.filter(a=>!a.ok).map(a=>{const Q=QB[a.q];return `<div style="padding:8px 0;border-top:1px solid var(--line)"><b>${esc(Q[0])}</b><div class="small">正確答案：${esc(Q[1][Q[2]])}。${esc(Q[3])}</div></div>`}).join('')||'<p>全部答對。</p>'}
+    <div class="row" style="margin-top:12px"><button class="btn pri" data-act="q-start">再測一次</button></div></div>`}
+  const Q=QB[q.qs[q.i]];const a=q.ans[q.i];
+  return `<div class="panel"><div class="row"><span class="chip">第 ${q.i+1} / ${q.qs.length} 題</span><span class="dots" aria-hidden="true">${q.qs.map((_,k)=>`<i class="${k<q.ans.length&&q.ans[k]?(q.ans[k].ok?'ok':'no'):k===q.i?'cur':''}"></i>`).join('')}</span><span class="chip good">已答對 ${q.ans.filter(x=>x.ok).length}</span></div>
+  <h3 style="margin:12px 0 4px;font-family:var(--body)">${esc(Q[0])}</h3>
+  ${Q[1].map((o,k)=>{let c='';if(a){if(k===Q[2])c='right';else if(k===a.pick)c='wrong'}return `<button class="opt ${c}" data-act="q-pick" data-k="${k}" ${a?'disabled':''}><span class="L">${String.fromCharCode(65+k)}</span><span>${esc(o)}</span></button>`}).join('')}
+  ${a?`<div class="note ${a.ok?'info':''}" style="margin-top:12px"><b>${a.ok?'答對了。':'答錯了。'}</b>${esc(Q[3])}</div><div class="row" style="margin-top:12px"><button class="btn pri" data-act="q-next">${q.i+1<q.qs.length?'下一題':'看結果'}</button></div>`:''}</div>`;
+}
+function sparkline(vals){if(vals.length<2)return '';const w=320,h=60,mx=MAX;const pts=vals.map((v,i)=>[i/(vals.length-1)*(w-10)+5,h-5-(v/mx)*(h-10)]);
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="100%" height="${h}" role="img" aria-label="技術練習分數趨勢"><line x1="0" x2="${w}" y1="${h-5-(cfg().passScore/mx)*(h-10)}" y2="${h-5-(cfg().passScore/mx)*(h-10)}" stroke="var(--line)" stroke-dasharray="4 4"/><polyline fill="none" stroke="var(--accent)" stroke-width="2" points="${pts.map(p=>p.join(',')).join(' ')}"/>${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===pts.length-1?4:2.5}" fill="var(--accent)"/>`).join('')}</svg>`}
+function stuMine(){
+  const list=[...st.mine].sort((a,b)=>b.date-a.date);
+  const ck=list.filter(x=>x.type==='checklist');const qz=list.filter(x=>x.type==='quiz');
+  const cloudMsg=P.cloud&&st.stuCloudOK?'你的紀錄會同步給授課老師。':'目前你的紀錄只存在這台裝置。請按「下載我的紀錄檔」並上傳到課程平台，或依老師指示繳交，老師即可匯入。';
+  return `<div class="grid3"><div class="kpi"><small>技術練習次數</small><b>${ck.length}</b></div><div class="kpi"><small>技術練習最高分</small><b>${ck.length?Math.max(...ck.map(x=>x.total)):'—'}</b></div><div class="kpi"><small>小測驗最佳</small><b>${qz.length?Math.max(...qz.map(x=>x.score))+' / 10':'—'}</b></div></div>
+  ${ck.length>1?`<div class="panel"><h3>技術練習分數趨勢</h3><p class="small muted" style="margin:2px 0 6px">虛線為及格分數 ${cfg().passScore}</p>${sparkline(ck.slice().reverse().map(x=>x.total))}</div>`:''}
+  <div class="note ${P.cloud&&st.stuCloudOK?'info':''}">${cloudMsg}</div>
+  <div class="row"><button class="btn" data-act="mine-export">下載我的紀錄檔</button><button class="btn" data-act="mine-copy">複製紀錄文字</button></div>
+  <div class="tbl-wrap"><table class="data"><thead><tr><th>時間</th><th>類型</th><th>方式</th><th style="text-align:right">分數</th><th style="text-align:right">用時</th></tr></thead><tbody>
+  ${list.map(x=>`<tr><td>${fmtDT(x.date)}</td><td>${x.type==='quiz'?'小測驗':'技術練習'}</td><td>${x.type==='quiz'?'—':x.mode==='peer'?'同儕互評'+(x.partner?'（'+esc(x.partner)+'）':''):'自我檢核'}</td><td class="n">${x.type==='quiz'?x.score+' / 10':x.total+' / '+MAX}</td><td class="n">${fmtDur(x.dur)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">還沒有紀錄，先去做一次技術練習或小測驗吧。</td></tr>'}
+  </tbody></table></div>`;
+}
+function mineKey(){return 'nn-mine:'+st.student.sid}
+async function loadMine(){
+  st.mineLoaded=true;
+  let local=lsGetRaw(mineKey())||[];
+  let remote=[];
+  if(P.cloud&&P.uid){try{const d=await Store.get('practice/'+P.uid);if(d&&d.sid===st.student.sid&&Array.isArray(d.sessions))remote=d.sessions}catch{}}
+  else if(!P.cloud){const d=lsGetRaw(LS+'practice/local-'+st.student.sid);if(d&&Array.isArray(d.sessions))remote=d.sessions}
+  const map=new Map();[...remote,...local].forEach(x=>map.set(x.id,x));
+  st.mine=[...map.values()];
+  if(st.view==='student'&&(st.stuTab==='mine'||st.stuTab==='practice'&&(!st.prac||st.prac.phase==='setup')))render();
+}
+async function saveSession(sess){
+  st.mine.push(sess);
+  const all=st.mine.slice().sort((a,b)=>a.date-b.date).slice(-80);
+  lsSetRaw(mineKey(),all);
+  const doc={grade:st.student.grade,sid:st.student.sid,name:st.student.name||'',updatedAt:Date.now(),sessions:all};
+  if(!P.cloud){await Store.set('practice/local-'+st.student.sid,doc);return '已儲存在這台裝置（本機模式）。'}
+  if(!P.uid){st.stuCloudOK=false;return '已儲存在這台裝置。未登入 Claude 帳號，無法同步給老師，請到「我的紀錄」下載紀錄檔繳交。'}
+  try{await queuedSet('practice/'+P.uid,doc);st.stuCloudOK=true;return null}
+  catch(e){st.stuCloudOK=false;return '已儲存在這台裝置，但沒有權限同步到雲端。請到「我的紀錄」下載紀錄檔繳交給老師。'}
+}
+
+/* ================= 教師端：資料訂閱 ================= */
+function ensureTeacherSubs(){
+  if(st.tSubs)return;st.tSubs=true;
+  let got=0;const done=()=>{got++;if(got>=3){st.tLoaded=true;clearTimeout(slow)}};
+  const slow=setTimeout(()=>{if(!st.tLoaded){st.tSlow=true;rerenderTeacher()}},10000);
+  const onErr=e=>{st.tSlow=true;toast('資料讀取失敗：'+(e&&e.message||e&&e.code||''));rerenderTeacher()};
+  let f1=false,f2=false,f3=false;
+  Store.watchColl('exams',(docs,m)=>{st.exams=docs;if(!m.fromCache&&!f1){f1=true;done()}rerenderTeacher()},onErr);
+  Store.watchColl('practice',(docs,m)=>{st.practice=docs;if(!m.fromCache&&!f2){f2=true;done()}rerenderTeacher()},onErr);
+  Store.watchDoc('config/main',(d,m)=>{st.config=d;if(!m.fromCache&&!f3){f3=true;done()}rerenderTeacher()},onErr);
+}
+let rrPending=false;
+function rerenderTeacher(){if(rrPending)return;rrPending=true;requestAnimationFrame(()=>{rrPending=false;if(st.view==='teacher'&&!document.querySelector('.modal')&&!isTyping())renderTeacher();else if(st.view==='exam'&&st.exam&&st.exam.phase==='setup'&&!isTyping())renderExam()})}
+function isTyping(){const a=document.activeElement;return a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&!a.closest('.filters')}
+
+/* ================= 教師端：考試評分 ================= */
+function newExam(){const s=st.examSetup;const c=cfg();return{phase:'setup',meta:{type:s.type||'期中考',term:s.term||c.term,date:new Date().toISOString().slice(0,10),examiner:s.examiner||'',station:s.station||'',grade:'二年級',sid:'',name:'',group:''},scores:{},ded:{},find:{},comment:'',start:null,limit:c.examMinutes,editingId:null}}
+function renderExam(){
+  if(!st.exam)st.exam=newExam();
+  const x=st.exam;const m=$('#main');const c=cfg();
+  if(x.phase==='setup'){
+    const roster=c.roster||[];
+    const recent=st.exams.slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).slice(0,8);
+    m.innerHTML=`<div class="panel"><h2>考試評分</h2><p class="muted" style="margin:4px 0 14px">設定考試資訊與考生後開始評分。考試資訊會記住，換下一位考生時只需更改學號。</p>
+    <h3 style="margin-bottom:8px">考試資訊</h3>
+    <div class="row">
+      <div class="field"><label for="x-type">考試類型</label><select id="x-type">${EXAM_TYPES.map(t=>`<option ${t===x.meta.type?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label for="x-term">學年度學期</label><input type="text" id="x-term" value="${esc(x.meta.term)}"></div>
+      <div class="field"><label for="x-date">考試日期</label><input type="date" id="x-date" value="${esc(x.meta.date)}"></div>
+      <div class="field"><label for="x-examiner">主考老師</label><input type="text" id="x-examiner" value="${esc(x.meta.examiner)}"></div>
+      <div class="field"><label for="x-station">考站／考場</label><input type="text" id="x-station" value="${esc(x.meta.station)}" placeholder="例：技術教室 A"></div>
+      <div class="field" style="max-width:150px"><label for="x-limit">考試時間（分鐘）</label><input type="number" id="x-limit" min="0" value="${esc(x.limit)}"></div>
+    </div>
+    <h3 style="margin:18px 0 8px">考生</h3>
+    <div class="row">
+      <div class="field" style="max-width:140px"><label for="x-grade">年級</label><select id="x-grade">${GRADES.map(g=>`<option ${g===x.meta.grade?'selected':''}>${g}</option>`).join('')}</select></div>
+      <div class="field"><label for="x-sid">學號</label><input type="text" id="x-sid" list="roster-list" value="${esc(x.meta.sid)}" autocomplete="off"></div>
+      <div class="field"><label for="x-name">姓名</label><input type="text" id="x-name" value="${esc(x.meta.name)}"></div>
+      <div class="field"><label for="x-group">組別／班級</label><input type="text" id="x-group" value="${esc(x.meta.group)}"></div>
+    </div>
+    <datalist id="roster-list">${roster.map(r=>`<option value="${esc(r.sid)}">${esc(r.name)} ${esc(r.group||'')}</option>`).join('')}</datalist>
+    <div class="err" id="x-err"></div>
+    <div id="x-dup"></div>
+    <div class="row" style="margin-top:6px"><button class="btn pri" data-act="x-start">開始評分</button>${roster.length?`<span class="small muted">已載入名單 ${roster.length} 人，輸入學號會自動帶出姓名與組別。</span>`:`<span class="small muted">可到「教師管理 › 名單與設定」匯入學生名單，評分時自動帶出姓名。</span>`}</div></div>
+    <div class="panel"><h3>最近評分</h3>${recent.length?`<div class="tbl-wrap" style="margin-top:8px"><table class="data"><thead><tr><th>時間</th><th>考試</th><th>學號</th><th>姓名</th><th style="text-align:right">總分</th><th>主考</th><th></th></tr></thead><tbody>${recent.map(e=>`<tr><td>${fmtDT(e.updatedAt)}</td><td>${esc(e.type)}</td><td class="num">${esc(e.sid)}</td><td>${esc(e.name)}</td><td class="n">${e.total}</td><td>${esc(e.examiner)}</td><td><button class="btn sm" data-act="x-edit" data-id="${esc(e._id)}">修改</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="muted">尚無評分紀錄。</p>'}</div>`;
+    const sidEl=$('#x-sid');
+    sidEl.addEventListener('input',()=>{const v=sidEl.value.trim().toUpperCase();const r=roster.find(z=>z.sid===v);if(r){$('#x-name').value=r.name||'';$('#x-group').value=r.group||'';if(r.grade&&GRADES.includes(r.grade))$('#x-grade').value=r.grade}
+      const dup=st.exams.filter(e=>e.sid===v&&e.type===$('#x-type').value&&e.term===$('#x-term').value.trim());$('#x-dup').innerHTML=dup.length?`<div class="note">此學生在 ${esc($('#x-type').value)} 已有 ${dup.length} 筆紀錄（最近 ${dup[0].total} 分）。繼續將新增一筆；若要修改請從下方「最近評分」或教師管理進入。</div>`:''});
+    return;
+  }
+  const mt=x.meta;
+  m.innerHTML=`<div class="note info small" style="max-width:1000px;width:100%;margin:0 auto"><b>${esc(mt.type)}</b>・${esc(mt.term)}・${esc(mt.date)}${mt.station?'・'+esc(mt.station):''}${mt.examiner?'・主考 '+esc(mt.examiner):''}${x.editingId?' <span class="chip warn">修改既有紀錄</span>':''}　未能口述施測項目或結果者，該項不得分；未比較兩側不得分。</div>
+  ${sheetHTML('x',x.scores,x.ded,'score',x.find)}
+  <div class="panel" style="max-width:1000px;width:100%;margin:0 auto"><div class="field"><label for="x-comment">評語／觀察紀錄</label><textarea id="x-comment" placeholder="例：GCS 運動反應說明不完整；跟腱反射敲擊位置偏高">${esc(x.comment)}</textarea></div></div>
+  <div class="row" style="max-width:1000px;width:100%;margin:0 auto;justify-content:flex-end"><button class="btn" data-act="x-cancel">取消</button><button class="btn pri" data-act="x-save">${x.editingId?'更新成績':'儲存成績'}</button></div>`;
+  $('#x-comment').addEventListener('input',e=>{x.comment=e.target.value});
+  $('#sbar').innerHTML=scoreBar('x',x.editingId?'更新成績':'儲存成績',`${mt.type}・${mt.sid}${mt.name?' '+mt.name:''}・${mt.grade}${mt.group?' '+mt.group:''}`);refreshBar('x');startTick('x');
+}
+async function saveExam(force){
+  const x=st.exam;const r=scoreOf(x.scores,x.ded);
+  if(r.n<ITEMS.length&&!force){
+    showModal(`<h2>還有 ${ITEMS.length-r.n} 個項目未評分</h2><p>未評分的項目將以 0 分計算。要先回去補評，還是直接儲存？</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="modal-close">回去補評</button><button class="btn pri" data-act="x-save-force">以 0 分計並儲存</button></div>`);return}
+  const id=x.editingId||uid('x');
+  const old=x.editingId?st.exams.find(e=>e._id===id):null;
+  const dur=old?old.durationSec:Math.round((Date.now()-x.start)/1000);
+  const scores={};ITEMS.forEach(i=>scores[i.id]=x.scores[i.id]??0);
+  const doc={...x.meta,scores,ded:{...x.ded},raw:r.raw,dedTotal:r.ded,total:r.total,max:MAX,pass:r.total>=cfg().passScore,durationSec:dur,comment:x.comment||'',find:x.find||{},createdAt:old?.createdAt||Date.now(),updatedAt:Date.now(),by:P.uid||'local'};
+  try{await queuedSet('exams/'+id,doc);closeModal();toast(`已儲存 ${doc.sid} ${doc.name}：${doc.total} 分`);
+    st.exam=newExam();Object.assign(st.exam.meta,{type:doc.type,term:doc.term,date:doc.date,examiner:doc.examiner,station:doc.station,grade:doc.grade});render();window.scrollTo(0,0)}
+  catch(e){closeModal();toast('儲存失敗：'+(e&&e.message||e&&e.code||'請稍後再試'))}
+}
+
+/* ================= 教師端：管理 ================= */
+function filtered(){const f=st.f;const q=f.q.trim().toUpperCase();return st.exams.filter(e=>(!f.term||e.term===f.term)&&(!f.type||e.type===f.type)&&(!f.grade||e.grade===f.grade)&&(!f.group||e.group===f.group)&&(!q||String(e.sid).toUpperCase().includes(q)||String(e.name||'').toUpperCase().includes(q)))}
+function practiceByStudent(){const map=new Map();st.practice.forEach(d=>{if(!d.sid)return;const k=String(d.sid).toUpperCase();const cur=map.get(k)||{sid:k,grade:d.grade,name:d.name,sessions:new Map()};if(d.name&&!cur.name)cur.name=d.name;if(d.grade)cur.grade=d.grade;(d.sessions||[]).forEach(s=>cur.sessions.set(s.id,s));map.set(k,cur)});
+  return [...map.values()].map(x=>{const ss=[...x.sessions.values()];const ck=ss.filter(s=>s.type==='checklist');const qz=ss.filter(s=>s.type==='quiz');return{...x,sessions:ss,nCk:ck.length,nQz:qz.length,bestCk:ck.length?Math.max(...ck.map(s=>s.total)):null,lastCk:ck.length?ck.sort((a,b)=>b.date-a.date)[0].total:null,bestQz:qz.length?Math.max(...qz.map(s=>s.score)):null,last:ss.length?Math.max(...ss.map(s=>s.date)):null}})}
+function itemAnalysis(list){return ITEMS.map(i=>{const n=list.length;const sum=list.reduce((a,e)=>a+(e.scores?.[i.id]??0),0);const zero=list.filter(e=>(e.scores?.[i.id]??0)<i.p).length;return{...i,avg:n?sum/n:0,rate:n?sum/(n*i.p):0,miss:zero}})}
+function uniq(arr){return [...new Set(arr.filter(Boolean))].sort()}
+function renderTeacher(){
+  const m=$('#main');const c=cfg();const fl=filtered();
+  const tabs=[['overview','總覽與項目分析'],['records','考試紀錄'],['students','學生總覽'],['practice','練習紀錄'],['settings','名單與設定']];
+  const terms=uniq(st.exams.map(e=>e.term));const groups=uniq(st.exams.map(e=>e.group));
+  let h=`<div class="row"><h2 style="margin-right:auto">教師管理</h2><button class="btn" data-act="exp-xlsx">匯出 Excel</button><button class="btn" data-act="exp-csv">匯出 CSV（逐項得分）</button><button class="btn ghost" data-act="exp-copy">複製表格</button></div>
+  ${st.tSlow&&!st.tLoaded?'<div class="note">雲端資料還沒回應，畫面上的資料可能不完整。</div>':''}
+  <div class="panel row filters" style="padding:12px 16px;align-items:flex-end">
+    <div class="field"><label for="f-term">學期</label><select id="f-term" data-f="term"><option value="">全部</option>${terms.map(t=>`<option ${t===st.f.term?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
+    <div class="field"><label for="f-type">考試</label><select id="f-type" data-f="type"><option value="">全部</option>${EXAM_TYPES.map(t=>`<option ${t===st.f.type?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="field"><label for="f-grade">年級</label><select id="f-grade" data-f="grade"><option value="">全部</option>${GRADES.map(t=>`<option ${t===st.f.grade?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="field"><label for="f-group">組別</label><select id="f-group" data-f="group"><option value="">全部</option>${groups.map(t=>`<option ${t===st.f.group?'selected':''}>${esc(t)}</option>`).join('')}</select></div>
+    <div class="field"><label for="f-q">搜尋學號／姓名</label><input type="text" id="f-q" data-f="q" value="${esc(st.f.q)}"></div>
+  </div>
+  <div class="tabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" aria-selected="${st.tTab===k}" data-act="ttab" data-tab="${k}">${l}</button>`).join('')}</div>`;
+  if(st.tTab==='overview')h+=tOverview(fl,c);
+  else if(st.tTab==='records')h+=tRecords(fl,c);
+  else if(st.tTab==='students')h+=tStudents(c);
+  else if(st.tTab==='practice')h+=tPractice();
+  else h+=tSettings(c);
+  const ae=document.activeElement;const focusId=ae&&ae.id;const caret=ae&&ae.selectionStart;
+  m.innerHTML=h;
+  if(focusId){const el=document.getElementById(focusId);if(el){el.focus();try{if(caret!=null)el.setSelectionRange(caret,caret)}catch{}}}
+}
+function tOverview(fl,c){
+  if(!fl.length)return `<div class="panel"><h3>尚無符合條件的考試紀錄</h3><p class="muted">到「考試評分」為學生評分後，這裡會顯示成績分布與各項目得分率，幫助您看出全班最常失分的步驟。</p><a class="btn pri" href="#exam">前往考試評分</a></div>`;
+  const tot=fl.map(e=>e.total);const avg=tot.reduce((a,b)=>a+b,0)/tot.length;const pass=fl.filter(e=>e.total>=c.passScore).length;
+  const bins=[['<60',0,59.99],['60–69',60,69.99],['70–79',70,79.99],['80–89',80,89.99],['90–100',90,100]].map(([l,a,b])=>[l,tot.filter(t=>t>=a&&t<=b).length]);const bmax=Math.max(1,...bins.map(b=>b[1]));
+  const ia=itemAnalysis(fl);
+  const secRates=R.map(s=>{const its=ia.filter(i=>i.sec===s.id);const got=its.reduce((a,i)=>a+i.avg,0);return{name:s.name,rate:got/SEC_MAX[s.id],avg:got,max:SEC_MAX[s.id]}});
+  const worst=ia.slice().sort((a,b)=>a.rate-b.rate).slice(0,12);
+  const dedCounts=DED.map(([id,t,p])=>[t,fl.filter(e=>e.ded&&e.ded[id]).length]);
+  const col=r=>r>=.85?'good':r>=.7?'warn':'bad';
+  return `<div class="grid3">
+    <div class="kpi"><small>考試人次</small><b>${fl.length}</b></div>
+    <div class="kpi"><small>平均分數</small><b>${avg.toFixed(1)}</b></div>
+    <div class="kpi"><small>及格率（≥ ${c.passScore}）</small><b>${(pass/fl.length*100).toFixed(0)}%</b></div>
+    <div class="kpi"><small>最高／最低</small><b>${Math.max(...tot)} / ${Math.min(...tot)}</b></div></div>
+  <div class="grid2">
+    <div class="panel"><h3>分數分布</h3><div class="hist">${bins.map(([l,n])=>`<div class="col"><span>${n}</span><i style="height:${n/bmax*120}px"></i></div>`).join('')}</div><div class="hist-x">${bins.map(([l])=>`<span>${l}</span>`).join('')}</div></div>
+    <div class="panel"><h3>各段落平均得分率</h3><div style="margin-top:8px">${secRates.map(s=>`<div class="hbar"><span class="lbl" title="${esc(s.name)}">${esc(s.name)}</span><span class="track"><i class="${col(s.rate)}" style="width:${s.rate*100}%"></i></span><span class="num small">${(s.rate*100).toFixed(0)}%</span></div>`).join('')}</div></div>
+  </div>
+  <div class="panel"><h3>最常失分的 12 個項目</h3><p class="small muted" style="margin:2px 0 8px">得分率＝全體平均得分 ÷ 配分；括號為未拿滿分人數。</p>
+    ${worst.map(i=>`<div class="hbar"><span class="lbl" title="${esc(i.t)}"><span class="num muted">${i.id.toUpperCase()}</span> ${esc(i.grp||i.secName)}：${esc(i.t)}</span><span class="track"><i class="${col(i.rate)}" style="width:${i.rate*100}%"></i></span><span class="num small">${(i.rate*100).toFixed(0)}% (${i.miss})</span></div>`).join('')}</div>
+  <div class="panel"><h3>倒扣項目發生次數</h3><div style="margin-top:8px">${dedCounts.map(([t,n])=>`<div class="hbar"><span class="lbl" title="${esc(t)}">${esc(t)}</span><span class="track"><i class="bad" style="width:${n/fl.length*100}%"></i></span><span class="num small">${n} 人</span></div>`).join('')}</div></div>
+  <details class="panel"><summary style="cursor:pointer;font-weight:600">全部 ${ITEMS.length} 項得分率</summary><div class="tbl-wrap" style="margin-top:10px"><table class="data"><thead><tr><th>代碼</th><th>段落</th><th>項目</th><th style="text-align:right">配分</th><th style="text-align:right">平均</th><th style="text-align:right">得分率</th><th style="text-align:right">未滿分人數</th></tr></thead><tbody>${ia.map(i=>`<tr><td class="num">${i.id.toUpperCase()}</td><td>${esc(i.secName)}${i.grp?'・'+esc(i.grp):''}</td><td style="white-space:normal;min-width:260px">${esc(i.t)}</td><td class="n">${i.p}</td><td class="n">${i.avg.toFixed(2)}</td><td class="n">${(i.rate*100).toFixed(0)}%</td><td class="n">${i.miss}</td></tr>`).join('')}</tbody></table></div></details>`;
+}
+function tRecords(fl,c){
+  const list=fl.slice().sort((a,b)=>String(a.sid).localeCompare(String(b.sid))||(a.updatedAt||0)-(b.updatedAt||0));
+  return `<div class="row"><span class="muted">共 ${list.length} 筆。點選一列查看逐項得分。</span></div>
+  <div class="tbl-wrap"><table class="data"><thead><tr><th>學號</th><th>姓名</th><th>年級</th><th>組別</th><th>考試</th><th>學期</th><th>日期</th><th style="text-align:right">項目得分</th><th style="text-align:right">倒扣</th><th style="text-align:right">總分</th><th>結果</th><th>主考老師</th><th style="text-align:right">用時</th></tr></thead><tbody>
+  ${list.map(e=>`<tr class="click" data-act="rec-open" data-id="${esc(e._id)}" tabindex="0"><td class="num">${esc(e.sid)}</td><td>${esc(e.name)}</td><td>${esc(e.grade)}</td><td>${esc(e.group)}</td><td>${esc(e.type)}</td><td>${esc(e.term)}</td><td>${esc(e.date)}</td><td class="n">${e.raw}</td><td class="n">${e.dedTotal?'−'+e.dedTotal:'0'}</td><td class="n"><b>${e.total}</b></td><td><span class="chip ${e.total>=c.passScore?'good':'bad'}">${e.total>=c.passScore?'及格':'未及格'}</span></td><td>${esc(e.examiner)}</td><td class="n">${fmtDur(e.durationSec)}</td></tr>`).join('')||'<tr><td colspan="13" class="muted">沒有紀錄</td></tr>'}
+  </tbody></table></div>`;
+}
+function studentRows(c){
+  const roster=c.roster||[];const pr=practiceByStudent();const map=new Map();
+  roster.forEach(r=>map.set(r.sid,{sid:r.sid,name:r.name,grade:r.grade,group:r.group,inRoster:true}));
+  st.exams.forEach(e=>{const k=String(e.sid).toUpperCase();if(!map.has(k))map.set(k,{sid:k,name:e.name,grade:e.grade,group:e.group});const r=map.get(k);r.name=r.name||e.name;r.group=r.group||e.group;r[e.type]=Math.max(r[e.type]??-1,e.total)});
+  pr.forEach(p=>{if(!map.has(p.sid))map.set(p.sid,{sid:p.sid,name:p.name,grade:p.grade});Object.assign(map.get(p.sid),{nCk:p.nCk,bestCk:p.bestCk,nQz:p.nQz,bestQz:p.bestQz,last:p.last});const r=map.get(p.sid);r.name=r.name||p.name});
+  const f=st.f;const q=f.q.trim().toUpperCase();
+  return [...map.values()].filter(r=>(!f.grade||r.grade===f.grade)&&(!f.group||r.group===f.group)&&(!q||r.sid.includes(q)||String(r.name||'').toUpperCase().includes(q))).sort((a,b)=>a.sid.localeCompare(b.sid));
+}
+function tStudents(c){
+  const rows=studentRows(c);const sc=v=>v==null||v<0?'<span class="muted">—</span>':`<span class="${v>=c.passScore?'':'chip bad'}">${v}</span>`;
+  return `<p class="muted" style="margin:0">合併名單、考試成績（同類考試取最高分）與學生自主練習紀錄。${(c.roster||[]).length?'':'尚未匯入名單，只列出有紀錄的學生。'}</p>
+  <div class="tbl-wrap"><table class="data"><thead><tr><th>學號</th><th>姓名</th><th>年級</th><th>組別</th><th style="text-align:right">技術練習次數</th><th style="text-align:right">練習最高分</th><th style="text-align:right">小測驗最佳</th><th>最近練習</th>${EXAM_TYPES.map(t=>`<th style="text-align:right">${t}</th>`).join('')}</tr></thead><tbody>
+  ${rows.map(r=>`<tr><td class="num">${esc(r.sid)}</td><td>${esc(r.name)}</td><td>${esc(r.grade)}</td><td>${esc(r.group)}</td><td class="n">${r.nCk??0}</td><td class="n">${r.bestCk??'—'}</td><td class="n">${r.bestQz!=null?r.bestQz+'/10':'—'}</td><td>${r.last?fmtDT(r.last):'<span class="chip warn">未練習</span>'}</td>${EXAM_TYPES.map(t=>`<td class="n">${sc(r[t])}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="11" class="muted">沒有資料</td></tr>'}
+  </tbody></table></div>`;
+}
+function tPractice(){
+  const pr=practiceByStudent();const f=st.f;const q=f.q.trim().toUpperCase();
+  const list=pr.filter(p=>(!f.grade||p.grade===f.grade)&&(!q||p.sid.includes(q)||String(p.name||'').toUpperCase().includes(q)));
+  const all=list.flatMap(p=>p.sessions.filter(s=>s.type==='checklist'));
+  const ia=all.length?itemAnalysis(all):[];const worst=ia.slice().sort((a,b)=>a.rate-b.rate).slice(0,8);
+  return `<div class="panel"><div class="row"><h3 style="margin-right:auto">匯入學生紀錄檔</h3><label class="btn" for="imp-file">選擇紀錄檔（可多選）</label><input type="file" id="imp-file" accept=".json,.txt,application/json" multiple hidden></div>
+  <p class="small muted" style="margin:6px 0 0">學生若無法同步到雲端，可在「我的紀錄」下載紀錄檔繳交；也可把學生複製給您的紀錄文字貼在下方。</p>
+  <div class="row" style="margin-top:8px;align-items:flex-end"><div class="field"><label for="imp-text">貼上紀錄文字</label><textarea id="imp-text" style="min-height:60px"></textarea></div><button class="btn" data-act="imp-paste">匯入貼上的紀錄</button></div></div>
+  ${worst.length?`<div class="panel"><h3>自主練習中最常未做到的項目</h3><p class="small muted" style="margin:2px 0 8px">依 ${all.length} 次技術練習統計（學生自評或同儕互評）。</p>${worst.map(i=>`<div class="hbar"><span class="lbl" title="${esc(i.t)}">${esc(i.grp||i.secName)}：${esc(i.t)}</span><span class="track"><i class="${i.rate>=.85?'good':i.rate>=.7?'warn':'bad'}" style="width:${i.rate*100}%"></i></span><span class="num small">${(i.rate*100).toFixed(0)}%</span></div>`).join('')}</div>`:''}
+  <div class="tbl-wrap"><table class="data"><thead><tr><th>學號</th><th>姓名</th><th>年級</th><th style="text-align:right">技術練習</th><th style="text-align:right">最近一次</th><th style="text-align:right">最高分</th><th style="text-align:right">小測驗次數</th><th style="text-align:right">小測驗最佳</th><th>最近練習</th></tr></thead><tbody>
+  ${list.sort((a,b)=>a.sid.localeCompare(b.sid)).map(p=>`<tr class="click" data-act="pr-open" data-sid="${esc(p.sid)}" tabindex="0"><td class="num">${esc(p.sid)}</td><td>${esc(p.name)}</td><td>${esc(p.grade)}</td><td class="n">${p.nCk}</td><td class="n">${p.lastCk??'—'}</td><td class="n">${p.bestCk??'—'}</td><td class="n">${p.nQz}</td><td class="n">${p.bestQz!=null?p.bestQz+'/10':'—'}</td><td>${p.last?fmtDT(p.last):''}</td></tr>`).join('')||'<tr><td colspan="9" class="muted">尚無學生練習紀錄</td></tr>'}
+  </tbody></table></div>`;
+}
+function tSettings(c){
+  const roster=c.roster||[];
+  return `<div class="grid2"><div class="panel"><h3>評分設定</h3>
+    <div class="row" style="margin-top:10px;align-items:flex-end">
+      <div class="field"><label for="s-term">目前學年度學期</label><input type="text" id="s-term" value="${esc(c.term)}"></div>
+      <div class="field"><label for="s-pass">及格分數</label><input type="number" id="s-pass" min="0" max="100" value="${c.passScore}"></div>
+      <div class="field"><label for="s-min">考試時間（分鐘）</label><input type="number" id="s-min" min="0" value="${c.examMinutes}"></div>
+    </div><div class="row" style="margin-top:10px"><button class="btn pri" data-act="s-save">儲存設定</button></div></div>
+  <div class="panel"><h3>學生名單（${roster.length} 人）</h3>
+    <p class="small muted" style="margin:4px 0 8px">每行一位學生，以逗號或 Tab 分隔：<b>學號, 姓名, 年級, 組別</b>（年級、組別可省略）。可直接從 Excel 複製貼上，或選擇 CSV 檔。</p>
+    <textarea id="s-roster" style="min-height:140px" placeholder="學號, 王小明, 二年級, A組">${esc(roster.map(r=>[r.sid,r.name,r.grade,r.group].filter(v=>v!=null).join(', ')).join('\n'))}</textarea>
+    <div class="row" style="margin-top:8px"><button class="btn pri" data-act="s-roster">儲存名單</button><label class="btn" for="s-roster-file">從 CSV 檔載入</label><input type="file" id="s-roster-file" accept=".csv,.txt" hidden></div>
+  </div></div>
+  <div class="panel"><h3>變更教師密碼</h3><p class="small muted" style="margin:4px 0 8px">新密碼只存在這台裝置的這個瀏覽器（以加密雜湊保存）。其他電腦仍使用原本的密碼，需在該電腦另外變更。</p>
+    <div class="row" style="align-items:flex-end"><div class="field"><label for="pw-old">目前密碼</label><input type="password" id="pw-old" autocomplete="current-password"></div><div class="field"><label for="pw-new">新密碼（至少 6 碼）</label><input type="password" id="pw-new" autocomplete="new-password"></div><div class="field"><label for="pw-new2">再輸入一次新密碼</label><input type="password" id="pw-new2" autocomplete="new-password"></div><button class="btn pri" data-act="pw-change">變更密碼</button></div><div class="err" id="pw-err"></div></div>
+  <div class="panel"><h3>資料說明</h3><ul class="small" style="margin:6px 0 0;padding-left:20px">
+  <li>${P.cloud?'目前為雲端同步：考試成績、名單與設定只有此網頁的擁有者與編輯者能讀寫；學生只能寫入自己的練習紀錄，看不到其他人與考試成績。':'目前為本機模式：所有資料只存在這台裝置的瀏覽器。'}</li>
+  <li>學生練習紀錄要同步給教師，學生需以「參與者（Contributor）」以上的權限開啟此網頁；只有檢視權限的學生，可下載紀錄檔交給老師在「練習紀錄」匯入。</li>
+  <li>匯出 Excel 會依目前篩選條件輸出：考試總表、逐項得分、項目分析、學生總覽、練習紀錄五個工作表。</li></ul></div>`;
+}
+function parseRoster(text){const out=[];text.split(/\r?\n/).forEach(line=>{const parts=line.split(/[,\t，]/).map(s=>s.trim()).filter(Boolean);if(!parts.length)return;const sid=parts.find(p=>SID_RE.test(p));if(!sid)return;const rest=parts.filter(p=>p!==sid);const grade=rest.find(p=>GRADES.includes(p)||/^[1-5]$/.test(p));const g2=grade?(GRADES.includes(grade)?grade:GRADES[+grade-1]):'';const rest2=rest.filter(p=>p!==grade);out.push({sid:sid.toUpperCase(),name:rest2[0]||'',grade:g2,group:rest2[1]||''})});const m=new Map();out.forEach(r=>m.set(r.sid,r));return [...m.values()]}
+async function saveConfig(patch){const c={...cfg(),...patch};try{await queuedSet('config/main',c);st.config=c;toast('已儲存')}catch(e){toast('儲存失敗：'+(e.message||e.code))}}
+
+function openRecord(id){
+  const e=st.exams.find(x=>x._id===id);if(!e)return;const c=cfg();
+  showModal(`<div class="row"><div style="margin-right:auto"><h2>${esc(e.name||'')} <span class="num">${esc(e.sid)}</span></h2><div class="muted small">${esc(e.grade)} ${esc(e.group)} · ${esc(e.type)} · ${esc(e.term)} · ${esc(e.date)} · 主考 ${esc(e.examiner)}${e.station?' · '+esc(e.station):''}</div></div><button class="btn" data-act="modal-close" aria-label="關閉">關閉</button></div>
+  <div class="grid3"><div class="kpi"><small>總分</small><b>${e.total}</b></div><div class="kpi"><small>項目得分／倒扣</small><b>${e.raw} / −${e.dedTotal}</b></div><div class="kpi"><small>結果／用時</small><b style="font-size:1.2rem">${e.total>=c.passScore?'及格':'未及格'} · ${fmtDur(e.durationSec)}</b></div></div>
+  ${e.comment?`<div class="note info"><b>評語：</b>${esc(e.comment)}</div>`:''}
+  <div style="display:flex;flex-direction:column;gap:12px">${sheetHTML('v',e.scores||{},e.ded||{},'view',e.find)}</div>
+  <div class="row" style="justify-content:flex-end"><button class="btn danger" data-act="rec-del" data-id="${esc(id)}">刪除此紀錄</button><button class="btn" data-act="rec-copy" data-id="${esc(id)}">複製成績單文字</button><button class="btn pri" data-act="x-edit" data-id="${esc(id)}">修改評分</button></div>`);
+}
+function openPracticeStudent(sid){
+  const p=practiceByStudent().find(x=>x.sid===sid);if(!p)return;
+  const ss=p.sessions.slice().sort((a,b)=>b.date-a.date);
+  showModal(`<div class="row"><div style="margin-right:auto"><h2>${esc(p.name||'')} <span class="num">${esc(p.sid)}</span></h2><div class="muted small">${esc(p.grade)} · 練習 ${p.nCk} 次 · 小測驗 ${p.nQz} 次</div></div><button class="btn" data-act="modal-close">關閉</button></div>
+  ${p.nCk>1?sparkline(ss.filter(s=>s.type==='checklist').reverse().map(s=>s.total)):''}
+  <div class="tbl-wrap"><table class="data"><thead><tr><th>時間</th><th>類型</th><th>方式</th><th style="text-align:right">分數</th><th style="text-align:right">用時</th><th>未滿分項目</th></tr></thead><tbody>${ss.map(s=>`<tr><td>${fmtDT(s.date)}</td><td>${s.type==='quiz'?'小測驗':'技術練習'}</td><td>${s.type==='quiz'?'—':s.mode==='peer'?'同儕互評'+(s.partner?'（'+esc(s.partner)+'）':''):'自我檢核'}</td><td class="n">${s.type==='quiz'?s.score+'/10':s.total}</td><td class="n">${fmtDur(s.dur)}</td><td style="white-space:normal;min-width:220px" class="small">${s.type==='checklist'?ITEMS.filter(i=>(s.scores?.[i.id]??0)<i.p).map(i=>i.id.toUpperCase()).join('、')||'無':''}</td></tr>`).join('')}</tbody></table></div>`);
+}
+
+/* ================= 匯出 ================= */
+function examRowsBasic(list){return list.map(e=>[e.term,e.type,e.date,e.grade,e.sid,e.name,e.group,e.examiner,e.station||'',e.raw,e.dedTotal,e.total,e.total>=cfg().passScore?'及格':'未及格',fmtDur(e.durationSec),e.comment||'',findSummary(e.find)])}
+const BASIC_H=['學期','考試','日期','年級','學號','姓名','組別','主考老師','考站','項目得分','倒扣','總分','結果','用時','評語','評估發現'];
+function itemsTable(list){const head=['學期','考試','日期','年級','學號','姓名','組別','主考老師',...ITEMS.map(i=>`${i.id.toUpperCase()} ${i.grp||i.secName}：${i.t.slice(0,18)}（${i.p}）`),...DED.map(([id,t,p])=>`倒扣 ${t}（${p}）`),'項目得分','倒扣合計','總分'];
+  const rows=list.map(e=>[e.term,e.type,e.date,e.grade,e.sid,e.name,e.group,e.examiner,...ITEMS.map(i=>e.scores?.[i.id]??0),...DED.map(([id,,p])=>e.ded&&e.ded[id]?-p:0),e.raw,e.dedTotal,e.total]);return[head,...rows]}
+function sortedFl(){return filtered().slice().sort((a,b)=>String(a.sid).localeCompare(String(b.sid)))}
+function csvOf(aoa){return '﻿'+aoa.map(r=>r.map(v=>{const s=String(v??'');return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(',')).join('\r\n')}
+async function saveFile(filename,data){
+  if(P.dl){try{await P.dl.save({filename,data});toast('已儲存 '+filename)}catch(e){if(e&&e.code==='declined')toast('已取消下載');else toast('無法下載（'+(e&&e.code||'錯誤')+'），請改用「複製」');}return}
+  try{const blob=data instanceof Blob?data:new Blob([data]);const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();a.remove();toast('已開始下載 '+filename)}catch{toast('此檢視無法下載，請改用「複製」')}
+}
+function stamp(){const d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')}
+async function exportXlsx(){
+  if(!window.XLSX){toast('Excel 元件尚未載入，請改用 CSV');return}
+  const fl=sortedFl();const wb=XLSX.utils.book_new();const c=cfg();
+  const add=(name,aoa,widths)=>{const ws=XLSX.utils.aoa_to_sheet(aoa);if(widths)ws['!cols']=widths.map(w=>({wch:w}));XLSX.utils.book_append_sheet(wb,ws,name)};
+  add('考試總表',[BASIC_H,...examRowsBasic(fl)],[8,8,11,8,12,10,8,10,10,9,6,6,7,7,40,60]);
+  add('逐項得分',itemsTable(fl));
+  const ia=itemAnalysis(fl);add('項目分析',[['代碼','段落','分項','項目','配分','平均得分','得分率','未滿分人數','人數'],...ia.map(i=>[i.id.toUpperCase(),i.secName,i.grp,i.t,i.p,+i.avg.toFixed(2),+(i.rate*100).toFixed(1)+'%',i.miss,fl.length])],[6,18,18,60,6,9,8,10,6]);
+  const sr=studentRows(c);add('學生總覽',[['學號','姓名','年級','組別','技術練習次數','練習最高分','小測驗最佳(/10)','最近練習',...EXAM_TYPES],...sr.map(r=>[r.sid,r.name||'',r.grade||'',r.group||'',r.nCk??0,r.bestCk??'',r.bestQz??'',r.last?fmtDT(r.last):'',...EXAM_TYPES.map(t=>r[t]!=null&&r[t]>=0?r[t]:'')])],[12,10,8,8,12,10,14,14,8,8,8]);
+  const pr=practiceByStudent();add('練習紀錄',[['學號','姓名','年級','時間','類型','方式','評分同學','分數','滿分','用時','未滿分項目'],...pr.flatMap(p=>p.sessions.sort((a,b)=>a.date-b.date).map(s=>[p.sid,p.name||'',p.grade||'',fmtDT(s.date),s.type==='quiz'?'小測驗':'技術練習',s.type==='quiz'?'':s.mode==='peer'?'同儕互評':'自我檢核',s.partner||'',s.type==='quiz'?s.score:s.total,s.type==='quiz'?10:MAX,fmtDur(s.dur),s.type==='checklist'?ITEMS.filter(i=>(s.scores?.[i.id]??0)<i.p).map(i=>i.id.toUpperCase()).join(' '):'']))],[12,10,8,14,9,9,12,6,6,7,40]);
+  const buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  await saveFile(`神經系統評估成績_${st.f.type||'全部'}_${stamp()}.xlsx`,new Blob([buf]));
+}
+async function copyText(t){try{await navigator.clipboard.writeText(t);toast('已複製，可直接貼到 Excel 或文件')}catch{showModal(`<h2>請手動複製</h2><p class="small muted">瀏覽器不允許自動複製，請全選下方文字後複製。</p><textarea style="min-height:240px" readonly>${esc(t)}</textarea><div class="row" style="justify-content:flex-end"><button class="btn" data-act="modal-close">關閉</button></div>`)}}
+
+/* ================= Modal ================= */
+function showModal(html){$('#overlay').innerHTML=`<div class="modal-bg" data-act="modal-bg"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;const f=$('#overlay .modal button,#overlay .modal textarea');if(f)f.focus()}
+function closeModal(){$('#overlay').innerHTML='';if(st.view==='teacher')renderTeacher()}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#overlay').innerHTML)closeModal();if(e.key==='Enter'&&e.target.matches('tr.click'))e.target.click()});
+
+/* ================= 事件 ================= */
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.find){onFind(t);return}
+  if(t.dataset.f){st.f[t.dataset.f]=t.value;renderTeacher();return}
+  if(t.dataset.act==='ded'){const S=ctxState(t.dataset.ctx);if(S){if(t.checked)S.ded[t.dataset.id]=true;else delete S.ded[t.dataset.id];refreshBar(t.dataset.ctx)}return}
+  if(t.id==='imp-file'){importFiles(t.files);t.value='';return}
+  if(t.id==='s-roster-file'&&t.files[0]){t.files[0].text().then(txt=>{$('#s-roster').value=txt;toast('已載入，請確認後按「儲存名單」')});return}
+});
+document.addEventListener('input',e=>{const fe=e.target.closest&&e.target.closest('[data-find]');if(fe)onFind(fe);if(e.target.id==='f-q'){st.f.q=e.target.value;clearTimeout(window.__fq);window.__fq=setTimeout(renderTeacher,250)}});
+document.addEventListener('click',async e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
+  if(a==='modal-bg'){if(e.target===el)closeModal();return}
+  switch(a){
+  case 'modal-close':closeModal();break;
+  case 'find-res':{const S=ctxState(el.dataset.ctx);if(!S)break;S.find=S.find||{};const d=S.find[el.dataset.sec]=S.find[el.dataset.sec]||{};d.res=d.res===el.dataset.v?'':el.dataset.v;el.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===d.res)));break}
+  case 'palette':lsSetRaw('nn-palette',el.dataset.pal);applyPalette();document.getElementById('pal').open=false;render();if(st.view==='teacher'&&!document.querySelector('.modal'))renderTeacher();break;
+  case 'logout':st.student=null;lsDelRaw('nn-student');st.mine=[];st.mineLoaded=false;st.prac=null;st.quiz=null;render();break;
+  case 'stutab':st.stuTab=el.dataset.tab;if(el.dataset.tab==='practice'&&st.prac&&st.prac.phase==='done')st.prac=null;render();window.scrollTo(0,0);break;
+  case 'jump':{const t=document.getElementById(el.dataset.target);if(t)t.scrollIntoView({behavior:'smooth',block:'start'});break}
+  case 'score':{const S=ctxState(el.dataset.ctx);if(!S)break;const v=+el.dataset.v;if(S.scores[el.dataset.id]===v)delete S.scores[el.dataset.id];else S.scores[el.dataset.id]=v;refreshItem(el.dataset.ctx,el.dataset.id);refreshBar(el.dataset.ctx);break}
+  case 'fillsec':{const S=ctxState(el.dataset.ctx);ITEMS.filter(i=>i.sec===el.dataset.sec).forEach(i=>{S.scores[i.id]=i.p;refreshItem(el.dataset.ctx,i.id)});refreshBar(el.dataset.ctx);break}
+  case 'p-start':st.prac={phase:'run',mode:$('#pr-mode').value,partner:$('#pr-partner').value.trim().toUpperCase(),scores:{},ded:{},find:{},start:Date.now()};render();window.scrollTo(0,0);break;
+  case 'p-cancel':showModal(`<h2>放棄這次練習？</h2><p>已評的分數不會儲存。</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="modal-close">繼續練習</button><button class="btn danger" data-act="p-discard">放棄</button></div>`);break;
+  case 'p-discard':st.prac=null;$('#overlay').innerHTML='';render();break;
+  case 'p-new':st.prac=null;render();break;
+  case 'p-save':{const p=st.prac;const r=scoreOf(p.scores,p.ded);p.dur=Math.round((Date.now()-p.start)/1000);const scores={};ITEMS.forEach(i=>scores[i.id]=p.scores[i.id]??0);
+    const sess={id:uid('s'),type:'checklist',mode:p.mode,partner:p.partner,date:Date.now(),dur:p.dur,raw:r.raw,ded:r.ded,total:r.total,max:MAX,scores,dedIds:Object.keys(p.ded),find:p.find||{}};
+    p.scores=scores;p.phase='done';p.saveNote=await saveSession(sess);render();window.scrollTo(0,0);if(r.total>=cfg().passScore)confetti();break}
+  case 'q-start':{const idx=QB.map((_,i)=>i);for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]]}st.quiz={qs:idx.slice(0,10),i:0,ans:[],start:Date.now()};render();break}
+  case 'q-pick':{const q=st.quiz;const k=+el.dataset.k;const Q=QB[q.qs[q.i]];q.ans[q.i]={q:q.qs[q.i],pick:k,ok:k===Q[2]};render();break}
+  case 'q-next':{const q=st.quiz;q.i++;if(q.i>=q.qs.length){const sc=q.ans.filter(a=>a.ok).length;q.saveNote=await saveSession({id:uid('q'),type:'quiz',date:Date.now(),dur:Math.round((Date.now()-q.start)/1000),score:sc,max:10,wrong:q.ans.filter(a=>!a.ok).map(a=>a.q)});if(sc>=7)confetti()}render();break}
+  case 'mine-export':{const d={kind:'ncku-neuro-practice',version:1,grade:st.student.grade,sid:st.student.sid,name:st.student.name||'',exportedAt:Date.now(),sessions:st.mine};await saveFile(`練習紀錄_${st.student.sid}_${stamp()}.json`,JSON.stringify(d));break}
+  case 'mine-copy':{const d={kind:'ncku-neuro-practice',version:1,grade:st.student.grade,sid:st.student.sid,name:st.student.name||'',exportedAt:Date.now(),sessions:st.mine};copyText(JSON.stringify(d));break}
+  /* 考試 */
+  case 'x-start':{const x=st.exam;const sid=$('#x-sid').value.replace(/\s+/g,'').toUpperCase();if(!SID_RE.test(sid)){$('#x-err').textContent='請輸入學號（英文字母或數字，不含空白與符號）。';break}
+    Object.assign(x.meta,{type:$('#x-type').value,term:$('#x-term').value.trim(),date:$('#x-date').value,examiner:$('#x-examiner').value.trim(),station:$('#x-station').value.trim(),grade:$('#x-grade').value,sid,name:$('#x-name').value.trim(),group:$('#x-group').value.trim()});
+    x.limit=+$('#x-limit').value||0;st.examSetup={type:x.meta.type,term:x.meta.term,examiner:x.meta.examiner,station:x.meta.station};lsSetRaw('nn-exam-setup',st.examSetup);
+    x.phase='run';x.start=Date.now();render();window.scrollTo(0,0);break}
+  case 'x-cancel':showModal(`<h2>取消這次評分？</h2><p>尚未儲存的分數會遺失。</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="modal-close">繼續評分</button><button class="btn danger" data-act="x-discard">取消評分</button></div>`);break;
+  case 'x-discard':{const keep=st.exam.meta;st.exam=newExam();Object.assign(st.exam.meta,{type:keep.type,term:keep.term,examiner:keep.examiner,station:keep.station});$('#overlay').innerHTML='';render();break}
+  case 'x-save':saveExam(false);break;
+  case 'x-save-force':saveExam(true);break;
+  case 'x-edit':{const r=st.exams.find(z=>z._id===el.dataset.id);if(!r)break;$('#overlay').innerHTML='';st.exam={phase:'run',meta:{type:r.type,term:r.term,date:r.date,examiner:r.examiner,station:r.station||'',grade:r.grade,sid:r.sid,name:r.name,group:r.group},scores:{...(r.scores||{})},ded:{...(r.ded||{})},find:JSON.parse(JSON.stringify(r.find||{})),comment:r.comment||'',start:Date.now(),limit:0,editingId:r._id};location.hash='#exam';if(st.view==='exam')render();window.scrollTo(0,0);break}
+  /* 管理 */
+  case 'ttab':st.tTab=el.dataset.tab;renderTeacher();break;
+  case 'rec-open':openRecord(el.dataset.id);break;
+  case 'pr-open':openPracticeStudent(el.dataset.sid);break;
+  case 'rec-del':showModal(`<h2>刪除這筆考試紀錄？</h2><p>刪除後無法復原。</p><div class="row" style="justify-content:flex-end"><button class="btn" data-act="rec-open" data-id="${esc(el.dataset.id)}">取消</button><button class="btn danger" data-act="rec-del-ok" data-id="${esc(el.dataset.id)}">確定刪除</button></div>`);break;
+  case 'rec-del-ok':try{await Store.del('exams/'+el.dataset.id);toast('已刪除')}catch(err){toast('刪除失敗：'+(err.message||err.code))}closeModal();break;
+  case 'rec-copy':{const r=st.exams.find(z=>z._id===el.dataset.id);if(!r)break;const lines=[`${r.term} ${r.type}　${r.date}`,`學號：${r.sid}　姓名：${r.name}　${r.grade} ${r.group}`,`總分：${r.total}（項目 ${r.raw}，倒扣 ${r.dedTotal}）　主考：${r.examiner}`,'',...R.map(s=>{const its=ITEMS.filter(i=>i.sec===s.id);return `${s.name}：${its.reduce((a,i)=>a+(r.scores?.[i.id]??0),0)}/${SEC_MAX[s.id]}`}),'','未拿滿分：'+(ITEMS.filter(i=>(r.scores?.[i.id]??0)<i.p).map(i=>`${i.id.toUpperCase()} ${i.t}`).join('；')||'無'),r.comment?'評語：'+r.comment:''];copyText(lines.join('\n'));break}
+  case 'exp-xlsx':exportXlsx();break;
+  case 'exp-csv':await saveFile(`神經系統評估逐項得分_${st.f.type||'全部'}_${stamp()}.csv`,csvOf(itemsTable(sortedFl())));break;
+  case 'exp-copy':copyText([BASIC_H,...examRowsBasic(sortedFl())].map(r=>r.join('\t')).join('\n'));break;
+  case 't-logout':setUnlocked(false);updateTeacherBadge();if(st.view!=='student')render();toast('已登出教師專區');break;
+  case 'pw-change':{const er=$('#pw-err');const o=$('#pw-old').value,n=$('#pw-new').value,n2=$('#pw-new2').value;
+    if(await sha(o)!==teacherHash()){er.textContent='目前密碼不正確。';break}
+    if(n.length<6){er.textContent='新密碼至少需 6 碼。';break}
+    if(n!==n2){er.textContent='兩次輸入的新密碼不一致。';break}
+    lsSetRaw('nn-teacher-hash',await sha(n));setUnlocked(true);er.textContent='';['pw-old','pw-new','pw-new2'].forEach(id=>$('#'+id).value='');toast('教師密碼已變更');break}
+  case 's-save':saveConfig({term:$('#s-term').value.trim()||'115-1',passScore:+$('#s-pass').value||60,examMinutes:+$('#s-min').value||0});break;
+  case 's-roster':{const r=parseRoster($('#s-roster').value);await saveConfig({roster:r});toast(`名單已儲存，共 ${r.length} 人`);break}
+  case 'imp-paste':importTexts([$('#imp-text').value]);break;
+  }
+});
+function onFind(t){const S=ctxState(t.dataset.ctx);if(!S)return;S.find=S.find||{};const d=S.find[t.dataset.sec]=S.find[t.dataset.sec]||{};if(t.dataset.find==='_note')d.note=t.value;else{d.f=d.f||{};d.f[t.dataset.find]=t.value}const it=document.getElementById(`fi-${t.dataset.ctx}-${t.dataset.sec}`);if(it)it.textContent=interpFor(t.dataset.sec,d.f)}
+async function importFiles(files){const texts=[];for(const f of files){try{texts.push(await f.text())}catch{}}importTexts(texts)}
+async function importTexts(texts){let ok=0,bad=0;for(const t of texts){let d;try{d=JSON.parse(t.trim())}catch{bad++;continue}
+  if(!d||d.kind!=='ncku-neuro-practice'||!SID_RE.test(String(d.sid||''))||!Array.isArray(d.sessions)){bad++;continue}
+  const sid=String(d.sid).toUpperCase();const path='practice/imp-'+sid;
+  const prev=st.practice.find(p=>p._id==='imp-'+sid);const map=new Map();(prev?.sessions||[]).forEach(s=>map.set(s.id,s));
+  d.sessions.filter(s=>s&&s.id&&(s.type==='checklist'||s.type==='quiz')).forEach(s=>map.set(String(s.id),{id:String(s.id),type:s.type,mode:s.mode==='peer'?'peer':'self',partner:String(s.partner||''),date:+s.date||0,dur:+s.dur||0,raw:+s.raw||0,ded:+s.ded||0,total:+s.total||0,score:+s.score||0,max:+s.max||0,scores:typeof s.scores==='object'&&s.scores?Object.fromEntries(ITEMS.map(i=>[i.id,Math.min(i.p,Math.max(0,+s.scores[i.id]||0))])):undefined}));
+  try{await queuedSet(path,{grade:GRADES.includes(d.grade)?d.grade:'',sid,name:String(d.name||'').slice(0,40),updatedAt:Date.now(),imported:true,sessions:[...map.values()].slice(-120)});ok++}catch{bad++}}
+  toast(`匯入完成：成功 ${ok} 份${bad?`，無法辨識 ${bad} 份`:''}`);const ta=$('#imp-text');if(ta&&ok)ta.value='';}
+
+/* ================= 啟動 ================= */
+applyPalette();
+document.addEventListener('click',e=>{const d=document.getElementById('pal');if(d&&d.open&&!d.contains(e.target))d.open=false});
+route();
+initPlatform();
+</script>
+</body>
+</html>
