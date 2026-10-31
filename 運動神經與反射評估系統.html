@@ -204,6 +204,7 @@ table.data td.n{font-family:var(--mono);text-align:right}
     <a href="#exam" id="nav-exam">考試評分</a>
   </nav>
   <details class="pal" id="pal"><summary aria-label="切換配色"><span class="sw" id="pal-sw"></span>配色</summary><div class="pal-menu" id="pal-menu" role="menu"></div></details>
+  <button class="btn sm" id="t-logout" data-act="t-logout" hidden>教師登出</button>
   <span class="status" id="status">連線中…</span>
 </div></header>
 <main id="main"></main>
@@ -291,7 +292,7 @@ const fmtDate=t=>{if(!t)return '';const d=new Date(t);return d.toLocaleDateStrin
 const fmtDT=t=>{if(!t)return '';const d=new Date(t);return d.toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})};
 const fmtDur=s=>{s=Math.max(0,Math.round(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
 const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-const SID_RE=/^[A-Za-z][0-9A-Za-z]{7,9}$/;
+const SID_RE=/^[A-Za-z0-9]{4,15}$/;
 const lsGetRaw=k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}};
 const lsSetRaw=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
 const lsDelRaw=k=>{try{localStorage.removeItem(k)}catch{}};
@@ -343,7 +344,7 @@ const st={
 function cfg(){return Object.assign({term:'115-1',passScore:60,examMinutes:15,roster:[]},st.config||{})}
 
 /* ================= 路由 ================= */
-function route(){const h=(location.hash||'#student').slice(1);st.view=['student','teacher','exam'].includes(h)?h:'student';['student','teacher','exam'].forEach(v=>{const a=$('#nav-'+v);if(v===st.view)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});render()}
+function route(){updateTeacherBadge();const h=(location.hash||'#student').slice(1);st.view=['student','teacher','exam'].includes(h)?h:'student';['student','teacher','exam'].forEach(v=>{const a=$('#nav-'+v);if(v===st.view)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});render()}
 window.addEventListener('hashchange',route);
 
 function render(){
@@ -352,6 +353,7 @@ function render(){
   if(st.view==='student')renderStudent();
   else if(!P.ready){$('#main').innerHTML='<div class="panel">正在確認身分…</div>'}
   else if(!P.isTeacher){$('#main').innerHTML=`<div class="panel"><h2>僅限教師使用</h2><p class="muted">教師管理與考試評分只開放給此網頁的擁有者與編輯者。若您是授課教師，請請擁有者在分享設定中將您加為「編輯者」。學生請使用「學生練習」。</p><a class="btn pri" href="#student">前往學生練習</a></div>`}
+  else if(!teacherUnlocked())renderTeacherLogin();
   else{ensureTeacherSubs();if(st.view==='teacher')renderTeacher();else renderExam()}
 }
 
@@ -444,6 +446,32 @@ let tickTimer=null;
 function startTick(ctx){stopTick();const S=ctxState(ctx);const upd=()=>{const el=document.getElementById(`b-${ctx}-timer`);if(!el||!S)return;const el2=(Date.now()-S.start)/1000;if(ctx==='x'&&S.limit){const rem=S.limit*60-el2;el.textContent=(rem<0?'+':'')+fmtDur(Math.abs(rem));document.getElementById('b-x-timer-wrap').classList.toggle('over',rem<0)}else el.textContent=fmtDur(el2)};upd();tickTimer=setInterval(upd,1000)}
 function stopTick(){if(tickTimer){clearInterval(tickTimer);tickTimer=null}}
 
+/* ================= 教師密碼 ================= */
+const DEFAULT_HASH='75932bc6a2ad68f7de5c101a370ec11c62c1addb5b81294e333838c66781cb63';
+const UNLOCK_HOURS=8;
+async function sha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('nn-teacher:'+t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function teacherHash(){return lsGetRaw('nn-teacher-hash')||DEFAULT_HASH}
+function teacherUnlocked(){let u=null;try{u=JSON.parse(sessionStorage.getItem('nn-teacher-ok'))}catch{}return !!(u&&u.h===teacherHash()&&Date.now()-u.t<UNLOCK_HOURS*3600e3)}
+function setUnlocked(on){try{if(on)sessionStorage.setItem('nn-teacher-ok',JSON.stringify({h:teacherHash(),t:Date.now()}));else sessionStorage.removeItem('nn-teacher-ok')}catch{}}
+let pwFails=0,pwLockUntil=0;
+function renderTeacherLogin(){
+  $('#main').innerHTML=`<div class="login" style="grid-template-columns:1fr 1fr;max-width:820px">
+   <div class="l"><span class="kicker">教師專區</span><h1>教師入口</h1><p style="margin:10px 0 0">教師管理與考試評分需要輸入教師密碼。登入後在這個分頁保持 ${UNLOCK_HOURS} 小時，關閉分頁或按「教師登出」即上鎖。</p></div>
+   <form class="r" id="tlogin" novalidate><h2>輸入教師密碼</h2>
+    <div class="field"><label for="t-pw">教師密碼</label><input type="password" id="t-pw" autocomplete="current-password"></div>
+    <div class="err" id="t-err"></div>
+    <button class="btn pri" type="submit">進入${st.view==='exam'?'考試評分':'教師管理'}</button>
+    <a class="btn ghost" href="#student">返回學生練習</a></form></div>`;
+  const pw=$('#t-pw');pw.focus();
+  $('#tlogin').addEventListener('submit',async e=>{e.preventDefault();const err=$('#t-err');
+    if(Date.now()<pwLockUntil){err.textContent=`嘗試次數過多，請 ${Math.ceil((pwLockUntil-Date.now())/1000)} 秒後再試。`;return}
+    if(!pw.value){err.textContent='請輸入密碼。';return}
+    let h;try{h=await sha(pw.value)}catch{err.textContent='此瀏覽器不支援密碼驗證，請改用最新版 Chrome、Edge 或 Safari。';return}
+    if(h===teacherHash()){pwFails=0;setUnlocked(true);updateTeacherBadge();render()}
+    else{pwFails++;pw.value='';if(pwFails>=5){pwLockUntil=Date.now()+30000;pwFails=0;err.textContent='密碼錯誤次數過多，請 30 秒後再試。'}else err.textContent=`密碼錯誤，請再試一次（${pwFails}/5）。`}});
+}
+function updateTeacherBadge(){const b=document.getElementById('t-logout');if(b)b.hidden=!teacherUnlocked()}
+
 /* ================= 學生端 ================= */
 function renderStudent(){
   const m=$('#main');
@@ -457,7 +485,7 @@ function renderStudent(){
       <form class="r" id="login-form" novalidate>
         <h2>學生登入</h2><p class="muted" style="margin:-8px 0 0">輸入年級和學號就能開始練習。</p>
         <div class="field"><label for="lg-grade">年級</label><select id="lg-grade">${GRADES.map(g=>`<option ${g==='二年級'?'selected':''}>${g}</option>`).join('')}</select></div>
-        <div class="field"><label for="lg-sid">學號</label><input type="text" id="lg-sid" placeholder="例：B46131234" autocomplete="off" autocapitalize="characters"></div>
+        <div class="field"><label for="lg-sid">學號</label><input type="text" id="lg-sid" placeholder="請輸入你的學號" autocomplete="off" autocapitalize="characters"></div>
         <div class="field"><label for="lg-name">姓名（選填）</label><input type="text" id="lg-name" autocomplete="off"></div>
         <div class="err" id="lg-err"></div>
         <button class="btn pri" type="submit">開始使用</button>
@@ -467,7 +495,7 @@ function renderStudent(){
         <div><h2>教師入口</h2><p class="muted" style="margin:4px 0 0">管理學生名單、查看練習與考試狀況、匯出成績，或進行期中、期末考評分。限此網頁的擁有者與編輯者使用。</p></div>
         <div class="row"><a class="btn pri" href="#teacher">進入教師管理</a><a class="btn" href="#exam">進入考試評分</a></div>
       </div>`;
-    $('#login-form').addEventListener('submit',e=>{e.preventDefault();const sid=$('#lg-sid').value.trim().toUpperCase();if(!SID_RE.test(sid)){$('#lg-err').textContent='學號格式不正確：請以英文字母開頭，共 8–10 碼（例如 B46131234）。';return}
+    $('#login-form').addEventListener('submit',e=>{e.preventDefault();const sid=$('#lg-sid').value.replace(/\s+/g,'').toUpperCase();if(!SID_RE.test(sid)){$('#lg-err').textContent='請輸入學號（英文字母或數字，不含空白與符號）。';return}
       st.student={grade:$('#lg-grade').value,sid,name:$('#lg-name').value.trim()};lsSetRaw('nn-student',st.student);st.mineLoaded=false;st.stuTab='learn';render()});
     return;
   }
@@ -736,9 +764,11 @@ function tSettings(c){
     </div><div class="row" style="margin-top:10px"><button class="btn pri" data-act="s-save">儲存設定</button></div></div>
   <div class="panel"><h3>學生名單（${roster.length} 人）</h3>
     <p class="small muted" style="margin:4px 0 8px">每行一位學生，以逗號或 Tab 分隔：<b>學號, 姓名, 年級, 組別</b>（年級、組別可省略）。可直接從 Excel 複製貼上，或選擇 CSV 檔。</p>
-    <textarea id="s-roster" style="min-height:140px" placeholder="B46131234, 王小明, 二年級, A組">${esc(roster.map(r=>[r.sid,r.name,r.grade,r.group].filter(v=>v!=null).join(', ')).join('\n'))}</textarea>
+    <textarea id="s-roster" style="min-height:140px" placeholder="學號, 王小明, 二年級, A組">${esc(roster.map(r=>[r.sid,r.name,r.grade,r.group].filter(v=>v!=null).join(', ')).join('\n'))}</textarea>
     <div class="row" style="margin-top:8px"><button class="btn pri" data-act="s-roster">儲存名單</button><label class="btn" for="s-roster-file">從 CSV 檔載入</label><input type="file" id="s-roster-file" accept=".csv,.txt" hidden></div>
   </div></div>
+  <div class="panel"><h3>變更教師密碼</h3><p class="small muted" style="margin:4px 0 8px">新密碼只存在這台裝置的這個瀏覽器（以加密雜湊保存）。其他電腦仍使用原本的密碼，需在該電腦另外變更。</p>
+    <div class="row" style="align-items:flex-end"><div class="field"><label for="pw-old">目前密碼</label><input type="password" id="pw-old" autocomplete="current-password"></div><div class="field"><label for="pw-new">新密碼（至少 6 碼）</label><input type="password" id="pw-new" autocomplete="new-password"></div><div class="field"><label for="pw-new2">再輸入一次新密碼</label><input type="password" id="pw-new2" autocomplete="new-password"></div><button class="btn pri" data-act="pw-change">變更密碼</button></div><div class="err" id="pw-err"></div></div>
   <div class="panel"><h3>資料說明</h3><ul class="small" style="margin:6px 0 0;padding-left:20px">
   <li>${P.cloud?'目前為雲端同步：考試成績、名單與設定只有此網頁的擁有者與編輯者能讀寫；學生只能寫入自己的練習紀錄，看不到其他人與考試成績。':'目前為本機模式：所有資料只存在這台裝置的瀏覽器。'}</li>
   <li>學生練習紀錄要同步給教師，學生需以「參與者（Contributor）」以上的權限開啟此網頁；只有檢視權限的學生，可下載紀錄檔交給老師在「練習紀錄」匯入。</li>
@@ -827,7 +857,7 @@ document.addEventListener('click',async e=>{
   case 'mine-export':{const d={kind:'ncku-neuro-practice',version:1,grade:st.student.grade,sid:st.student.sid,name:st.student.name||'',exportedAt:Date.now(),sessions:st.mine};await saveFile(`練習紀錄_${st.student.sid}_${stamp()}.json`,JSON.stringify(d));break}
   case 'mine-copy':{const d={kind:'ncku-neuro-practice',version:1,grade:st.student.grade,sid:st.student.sid,name:st.student.name||'',exportedAt:Date.now(),sessions:st.mine};copyText(JSON.stringify(d));break}
   /* 考試 */
-  case 'x-start':{const x=st.exam;const sid=$('#x-sid').value.trim().toUpperCase();if(!SID_RE.test(sid)){$('#x-err').textContent='請輸入正確學號（英文字母開頭，8–10 碼）。';break}
+  case 'x-start':{const x=st.exam;const sid=$('#x-sid').value.replace(/\s+/g,'').toUpperCase();if(!SID_RE.test(sid)){$('#x-err').textContent='請輸入學號（英文字母或數字，不含空白與符號）。';break}
     Object.assign(x.meta,{type:$('#x-type').value,term:$('#x-term').value.trim(),date:$('#x-date').value,examiner:$('#x-examiner').value.trim(),station:$('#x-station').value.trim(),grade:$('#x-grade').value,sid,name:$('#x-name').value.trim(),group:$('#x-group').value.trim()});
     x.limit=+$('#x-limit').value||0;st.examSetup={type:x.meta.type,term:x.meta.term,examiner:x.meta.examiner,station:x.meta.station};lsSetRaw('nn-exam-setup',st.examSetup);
     x.phase='run';x.start=Date.now();render();window.scrollTo(0,0);break}
@@ -846,6 +876,12 @@ document.addEventListener('click',async e=>{
   case 'exp-xlsx':exportXlsx();break;
   case 'exp-csv':await saveFile(`神經系統評估逐項得分_${st.f.type||'全部'}_${stamp()}.csv`,csvOf(itemsTable(sortedFl())));break;
   case 'exp-copy':copyText([BASIC_H,...examRowsBasic(sortedFl())].map(r=>r.join('\t')).join('\n'));break;
+  case 't-logout':setUnlocked(false);updateTeacherBadge();if(st.view!=='student')render();toast('已登出教師專區');break;
+  case 'pw-change':{const er=$('#pw-err');const o=$('#pw-old').value,n=$('#pw-new').value,n2=$('#pw-new2').value;
+    if(await sha(o)!==teacherHash()){er.textContent='目前密碼不正確。';break}
+    if(n.length<6){er.textContent='新密碼至少需 6 碼。';break}
+    if(n!==n2){er.textContent='兩次輸入的新密碼不一致。';break}
+    lsSetRaw('nn-teacher-hash',await sha(n));setUnlocked(true);er.textContent='';['pw-old','pw-new','pw-new2'].forEach(id=>$('#'+id).value='');toast('教師密碼已變更');break}
   case 's-save':saveConfig({term:$('#s-term').value.trim()||'115-1',passScore:+$('#s-pass').value||60,examMinutes:+$('#s-min').value||0});break;
   case 's-roster':{const r=parseRoster($('#s-roster').value);await saveConfig({roster:r});toast(`名單已儲存，共 ${r.length} 人`);break}
   case 'imp-paste':importTexts([$('#imp-text').value]);break;
